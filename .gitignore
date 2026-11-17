@@ -18,3 +18,7 @@ out/
 .DS_Store
 Thumbs.db
 .vscode/
+.models/
+
+# Uploaded files
+backend/storage/
