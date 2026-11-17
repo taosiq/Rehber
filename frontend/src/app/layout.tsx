@@ -14,7 +14,7 @@ const display = Instrument_Serif({
 export const metadata: Metadata = {
   title: "Rehber — AI support agents that know your business",
   description:
-    "Upload your documents. Rehber answers your customers in English, Turkish, Arabic and Urdu, books appointments, checks orders and hands off to humans.",
+    "Upload your documents. Rehber answers your customers in 8 languages, including Turkish, English, Arabic, German and Russian, books appointments, checks orders and hands off to humans.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

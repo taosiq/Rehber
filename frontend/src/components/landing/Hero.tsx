@@ -16,7 +16,7 @@ export function Hero() {
 
   return (
     <section
-      className="relative isolate overflow-hidden pt-36 pb-24 md:pt-44"
+      className="relative isolate overflow-hidden pt-44 pb-28 md:pt-56"
       onMouseMove={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
         mx.set((e.clientX - r.left) / r.width - 0.5);
@@ -25,23 +25,23 @@ export function Hero() {
     >
       {/* Background layers */}
       <div className="bg-grid absolute inset-0 -z-10" />
-      <div className="aurora-blob -z-10 left-[-10%] top-[-10%] h-[520px] w-[520px] bg-violet" />
-      <div className="aurora-blob -z-10 right-[-8%] top-[10%] h-[420px] w-[420px] bg-accent/70 [animation-delay:-6s]" />
+      <div className="aurora-blob -z-10 left-[-10%] top-[-10%] h-[680px] w-[680px] bg-violet" />
+      <div className="aurora-blob -z-10 right-[-8%] top-[10%] h-[560px] w-[560px] bg-accent/70 [animation-delay:-6s]" />
       <div className="aurora-blob -z-10 left-[30%] bottom-[-20%] h-[380px] w-[380px] bg-cyan/50 [animation-delay:-12s]" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-48 bg-gradient-to-b from-transparent to-background" />
 
-      <div className="mx-auto grid max-w-6xl items-center gap-16 px-6 lg:grid-cols-[1.1fr_1fr]">
+      <div className="container-wide grid items-center gap-16 lg:grid-cols-[1.15fr_1fr] xl:gap-24">
         <div>
           <motion.span
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="inline-flex items-center gap-2 rounded-full border border-line bg-white/[0.03] px-3 py-1 text-xs text-muted backdrop-blur"
+            className="inline-flex items-center gap-2 rounded-full border border-line bg-white/[0.03] px-4 py-1.5 text-sm text-muted backdrop-blur"
           >
-            <Sparkles size={12} className="text-accent" /> AI support agents, grounded in your documents
+            <Sparkles size={14} className="text-accent" /> AI support agents, grounded in your documents
           </motion.span>
 
-          <h1 className="mt-6 font-display text-5xl leading-[1.02] tracking-tight md:text-7xl">
+          <h1 className="mt-7 font-display text-6xl leading-[1.0] tracking-tight md:text-7xl xl:text-[5.75rem] min-[1800px]:text-[7.5rem]">
             {headline.map((w, i) => (
               <motion.span
                 key={w}
@@ -67,11 +67,11 @@ export function Hero() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.6 }}
-            className="mt-6 max-w-xl text-lg leading-relaxed text-muted"
+            className="mt-8 max-w-2xl text-xl leading-relaxed text-muted"
           >
             Upload your PDFs and web pages. Rehber answers customers with cited sources, books
-            appointments, checks orders and hands tricky cases to your team in English, Turkish,
-            Arabic and Urdu.
+            appointments, checks orders and hands tricky cases to your team in 8 languages, from
+            Turkish and English to Arabic, German, Russian and more.
           </motion.p>
 
           <motion.div
@@ -82,12 +82,12 @@ export function Hero() {
           >
             <Link
               href="/dashboard"
-              className="group inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-black shadow-[0_0_40px_-6px_rgba(245,181,68,0.7)] transition-transform hover:scale-[1.03]"
+              className="group inline-flex items-center gap-2 rounded-full bg-accent px-8 py-4 text-lg font-semibold text-black shadow-[0_0_40px_-6px_rgba(245,181,68,0.7)] transition-transform hover:scale-[1.03]"
             >
               Build your agent
-              <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+              <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
             </Link>
-            <a href="#how" className="rounded-full border border-line px-6 py-3 text-sm text-foreground/90 transition-colors hover:bg-white/5">
+            <a href="#how" className="rounded-full border border-line px-8 py-4 text-lg text-foreground/90 transition-colors hover:bg-white/5">
               See how it works
             </a>
           </motion.div>

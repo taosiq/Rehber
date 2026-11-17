@@ -45,6 +45,36 @@ const scripts: Script[] = [
       { kind: "bot", text: "بالکل! میں آپ کو ہماری سپورٹ ٹیم سے جوڑ رہا ہوں۔ واپسی ۱۴ دن کے اندر مفت ہے۔", sources: ["returns.pdf · p.1"] },
     ],
   },
+  {
+    lang: "Deutsch", code: "DE", business: "Ege Boutique Hotel",
+    steps: [
+      { kind: "user", text: "Haben Sie für nächste Woche noch ein Doppelzimmer mit Meerblick?" },
+      { kind: "tool", icon: "calendar", label: "check_rooms(sea_view)" },
+      { kind: "bot", text: "Ja! Von Montag bis Freitag ist ein Doppelzimmer mit Meerblick frei, 145 € pro Nacht inklusive Frühstück. Soll ich es reservieren?", sources: ["rooms.pdf · p.2"] },
+    ],
+  },
+  {
+    lang: "Русский", code: "RU", business: "Antalya Smile Clinic",
+    steps: [
+      { kind: "user", text: "Сколько стоит установка импланта и сколько дней это займёт?" },
+      { kind: "bot", text: "Имплант стоит от 450 €. Обычно нужно два визита с перерывом 5–7 дней. Трансфер из отеля бесплатный.", sources: ["implants.pdf · p.4", "transfer.html"] },
+    ],
+  },
+  {
+    lang: "Français", code: "FR", business: "Kapadokya Balloons",
+    steps: [
+      { kind: "user", text: "Le vol en montgolfière de demain est-il confirmé ?" },
+      { kind: "tool", icon: "package", label: "get_booking(#CP-2207)" },
+      { kind: "bot", text: "Oui, votre vol est confirmé. Prise en charge à votre hôtel à 4h45. Pensez à une veste chaude !", sources: ["faq.pdf · p.1"] },
+    ],
+  },
+  {
+    lang: "فارسی", code: "FA", rtl: true, business: "Bosphorus Tours",
+    steps: [
+      { kind: "user", text: "تور کشتی بسفر چند ساعت طول می‌کشد؟" },
+      { kind: "bot", text: "تور کشتی حدود ۲ ساعت است و هر روز ساعت ۱۰ و ۱۴ حرکت می‌کند. بلیت می‌خواهید؟", sources: ["tours.pdf · p.2"] },
+    ],
+  },
 ];
 
 const toolIcons = { calendar: CalendarCheck, package: Package, human: UserRound };
@@ -71,7 +101,7 @@ function BotMessage({ step, rtl, onDone }: { step: Extract<Step, { kind: "bot" }
   useEffect(() => { if (done) { const t = setTimeout(onDone, 2600); return () => clearTimeout(t); } }, [done, onDone]);
   return (
     <div className={clsx("flex flex-col gap-2", rtl ? "items-end" : "items-start")}>
-      <div dir={rtl ? "rtl" : "ltr"} className="max-w-[85%] rounded-2xl rounded-ss-sm border border-line bg-white/[0.04] px-4 py-2.5 text-sm leading-relaxed">
+      <div dir={rtl ? "rtl" : "ltr"} className="max-w-[85%] rounded-2xl rounded-ss-sm border border-line bg-white/[0.04] px-5 py-3 text-base leading-relaxed">
         {shown}
         {!done && <span className="ms-0.5 inline-block h-4 w-[2px] translate-y-0.5 animate-pulse bg-accent" />}
       </div>
@@ -84,7 +114,7 @@ function BotMessage({ step, rtl, onDone }: { step: Extract<Step, { kind: "bot" }
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.12 }}
-                className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 font-mono text-[10px] text-accent"
+                className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 font-mono text-[11px] text-accent"
               >
                 <FileText size={10} /> {s}
               </motion.span>
@@ -114,30 +144,30 @@ export function ChatDemo() {
   const waiting = script.steps[stepIdx]?.kind === "user";
 
   return (
-    <div className="glow-border relative w-full max-w-md rounded-3xl bg-[#0d0d14]/90 shadow-[0_30px_120px_-30px_rgba(139,92,246,0.45)] backdrop-blur-xl">
+    <div className="glow-border relative w-full max-w-xl rounded-3xl bg-[#0d0d14]/90 shadow-[0_30px_120px_-30px_rgba(139,92,246,0.45)] backdrop-blur-xl">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
         <div className="flex items-center gap-3">
-          <div className="relative grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-accent to-violet text-sm font-semibold text-black">
+          <div className="relative grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-accent to-violet text-sm font-semibold text-black">
             {script.business[0]}
             <span className="absolute -bottom-0.5 -end-0.5 h-3 w-3 rounded-full border-2 border-[#0d0d14] bg-emerald-400" />
           </div>
           <div>
             <AnimatePresence mode="wait">
-              <motion.p key={script.business} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="text-sm font-medium">
+              <motion.p key={script.business} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="text-base font-medium">
                 {script.business}
               </motion.p>
             </AnimatePresence>
-            <p className="text-xs text-muted">AI assistant · replies instantly</p>
+            <p className="text-sm text-muted">AI assistant · replies instantly</p>
           </div>
         </div>
-        <div className="flex gap-1">
+        <div className="grid grid-cols-4 gap-1">
           {scripts.map((s, i) => (
             <button
               key={s.code}
               onClick={() => { setScriptIdx(i); setStepIdx(0); }}
               className={clsx(
-                "rounded-md px-1.5 py-0.5 font-mono text-[10px] transition-colors",
+                "rounded-md px-1.5 py-0.5 font-mono text-[11px] transition-colors",
                 i === scriptIdx ? "bg-accent text-black" : "text-muted hover:text-foreground",
               )}
             >
@@ -148,7 +178,7 @@ export function ChatDemo() {
       </div>
 
       {/* Messages */}
-      <div className="flex h-[340px] flex-col justify-end gap-3 overflow-hidden px-5 py-5">
+      <div className="flex h-[420px] flex-col justify-end gap-3 overflow-hidden px-5 py-5">
         <AnimatePresence mode="popLayout">
           {visible.map((step, i) => (
             <motion.div
@@ -161,7 +191,7 @@ export function ChatDemo() {
             >
               {step.kind === "user" && (
                 <div className={clsx("flex", script.rtl ? "justify-start" : "justify-end")}>
-                  <div dir={script.rtl ? "rtl" : "ltr"} className="max-w-[80%] rounded-2xl rounded-se-sm bg-gradient-to-br from-violet to-violet/70 px-4 py-2.5 text-sm text-white">
+                  <div dir={script.rtl ? "rtl" : "ltr"} className="max-w-[80%] rounded-2xl rounded-se-sm bg-gradient-to-br from-violet to-violet/70 px-5 py-3 text-base text-white">
                     {step.text}
                   </div>
                 </div>
@@ -170,7 +200,7 @@ export function ChatDemo() {
                 const Icon = toolIcons[step.icon];
                 return (
                   <div className="flex justify-center">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-cyan/30 bg-cyan/10 px-3 py-1 font-mono text-[11px] text-cyan">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-cyan/30 bg-cyan/10 px-3.5 py-1.5 font-mono text-xs text-cyan">
                       <motion.span animate={{ rotate: [0, 360] }} transition={{ duration: 1.4, ease: "linear", repeat: Infinity }} className="inline-flex">
                         <Icon size={12} />
                       </motion.span>
@@ -194,7 +224,7 @@ export function ChatDemo() {
 
       {/* Input (decorative) */}
       <div className="border-t border-line px-4 py-3">
-        <div className="flex items-center justify-between rounded-xl bg-white/[0.04] px-4 py-2.5 text-sm text-muted">
+        <div className="flex items-center justify-between rounded-xl bg-white/[0.04] px-5 py-3 text-base text-muted">
           <span>Ask anything in {script.lang}…</span>
           <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px]">↵</kbd>
         </div>

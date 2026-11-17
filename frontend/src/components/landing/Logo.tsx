@@ -3,9 +3,9 @@
 import { motion } from "motion/react";
 
 /** Compass-needle mark: "Rehber" means "guide". The needle settles on load. */
-export function Logo({ size = 28 }: { size?: number }) {
+export function Logo({ size = 48 }: { size?: number }) {
   return (
-    <span className="inline-flex items-center gap-2.5">
+    <span className="inline-flex items-center" style={{ gap: size * 0.3 }}>
       <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
         <circle cx="16" cy="16" r="14.5" fill="none" stroke="url(#ring)" strokeWidth="1.5" />
         <motion.g
@@ -24,7 +24,7 @@ export function Logo({ size = 28 }: { size?: number }) {
           </linearGradient>
         </defs>
       </svg>
-      <span className="font-display text-2xl tracking-tight">Rehber</span>
+      <span className="font-display leading-none tracking-tight" style={{ fontSize: size * 0.85 }}>Rehber</span>
     </span>
   );
 }
