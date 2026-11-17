@@ -7,7 +7,7 @@ AI support agent platform. A business uploads its documents (PDFs, website pages
 - answers in English, Turkish, Arabic or Urdu
 - runs as a website chat widget, and later on WhatsApp
 
-**Stack:** Python, FastAPI, LangGraph, PostgreSQL + pgvector, Redis, Claude (Anthropic), Voyage embeddings, Next.js dashboard, Docker, GitHub Actions.
+**Stack:** Python, FastAPI, LangGraph, PostgreSQL + pgvector, Redis, Google Gemini (free tier; swappable to Claude) for chat + embeddings, Next.js dashboard, Docker, GitHub Actions.
 
 ## Layout
 
@@ -43,7 +43,7 @@ Tests: `cd backend && .venv\Scripts\python -m pytest`
 - [ ] 3. RAG chat with streaming answers and source citations
 - [ ] 4. LangGraph agent with tools (booking, orders, human handoff)
 - [ ] 5. Multi-tenancy: auth, API keys, data kept separate per business
-- [ ] 6. Embeddable chat widget + 4 languages (incl. RTL)
+- [ ] 6. Embeddable chat widget + 8 languages (TR, EN, DE, RU, FR, AR, FA, UR; incl. RTL)
 - [ ] 7. Evaluation set, Langfuse tracing, cost and speed tracking per business
 - [ ] 8. Full admin dashboard
 - [ ] 9. CI (GitHub Actions) and deploy online
