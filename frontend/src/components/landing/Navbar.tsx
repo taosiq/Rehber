@@ -22,23 +22,23 @@ export function Navbar() {
       initial={{ y: -40, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed inset-x-0 top-4 z-40 flex justify-center px-4"
+      className="fixed inset-x-0 top-5 z-40 flex justify-center px-4"
     >
       <nav
         className={clsx(
-          "flex w-full max-w-5xl items-center justify-between rounded-full border px-5 py-2.5 transition-all duration-500",
+          "flex w-full max-w-[1520px] items-center justify-between rounded-full border px-8 py-3.5 transition-all duration-500",
           scrolled
             ? "border-line bg-black/50 backdrop-blur-xl shadow-[0_8px_40px_-12px_rgba(0,0,0,0.8)]"
             : "border-transparent bg-transparent",
         )}
       >
         <a href="#" aria-label="Rehber home"><Logo /></a>
-        <ul className="hidden items-center gap-1 md:flex">
+        <ul className="hidden items-center gap-2 md:flex">
           {links.map((l) => (
             <li key={l.href}>
               <a
                 href={l.href}
-                className="rounded-full px-4 py-1.5 text-sm text-muted transition-colors hover:bg-white/5 hover:text-foreground"
+                className="rounded-full px-6 py-2.5 text-[1.45rem] text-muted transition-colors hover:bg-white/5 hover:text-foreground"
               >
                 {l.label}
               </a>
@@ -47,7 +47,7 @@ export function Navbar() {
         </ul>
         <Link
           href="/dashboard"
-          className="group relative overflow-hidden rounded-full bg-foreground px-4 py-1.5 text-sm font-medium text-background"
+          className="group relative overflow-hidden rounded-full bg-foreground px-7 py-3 text-[1.3rem] font-medium text-background"
         >
           <span className="relative z-10">Open dashboard</span>
           <span className="absolute inset-0 -translate-x-full bg-accent transition-transform duration-500 group-hover:translate-x-0" />

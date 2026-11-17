@@ -110,3 +110,13 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .aurora-blob, .glow-border::before { animation: none; }
 }
+
+/* Wide page container: uses most of large screens instead of a narrow centre column */
+.container-wide {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1600px;
+  padding-inline: 1.5rem;
+}
+@media (min-width: 768px) { .container-wide { padding-inline: 3rem; } }
+@media (min-width: 1280px) { .container-wide { padding-inline: 4.5rem; } }
