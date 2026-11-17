@@ -1,14 +1,14 @@
 """Database models.
 
 Every business-owned row carries `tenant_id`, so one business can never
-read another business's data (enforced in queries from Phase 5).
+read another business's data. All queries filter on it.
 """
 
 import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.config import get_settings
@@ -35,7 +35,7 @@ class Tenant(TimestampMixin, Base):
 
 
 class Document(TimestampMixin, Base):
-    """An uploaded PDF or crawled web page."""
+    """An uploaded PDF, crawled web page or pasted text."""
 
     __tablename__ = "documents"
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -44,6 +44,9 @@ class Document(TimestampMixin, Base):
     source_type: Mapped[str] = mapped_column(String(20))  # "pdf" | "url" | "text"
     source_uri: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(20), default="pending")  # pending|processing|ready|failed
+    error: Mapped[str | None] = mapped_column(Text)
+    chunk_count: Mapped[int] = mapped_column(Integer, default=0)
+    char_count: Mapped[int] = mapped_column(Integer, default=0)
 
     tenant: Mapped[Tenant] = relationship(back_populates="documents")
     chunks: Mapped[list["Chunk"]] = relationship(back_populates="document", cascade="all, delete-orphan")
@@ -62,3 +65,14 @@ class Chunk(Base):
     embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBED_DIM))
 
     document: Mapped[Document] = relationship(back_populates="chunks")
+
+    __table_args__ = (
+        # Approximate nearest-neighbour index for fast cosine search
+        Index(
+            "ix_chunks_embedding_hnsw",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_with={"m": 16, "ef_construction": 64},
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
+    )
