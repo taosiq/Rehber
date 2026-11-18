@@ -5,7 +5,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { BarChart3, Bot, Check, Wrench, ChevronsUpDown, FileText, LayoutGrid, MessagesSquare, Plus, Settings } from "lucide-react";
+import { BarChart3, Bot, Check, ChevronsUpDown, FileText, LayoutGrid, LogOut, MessagesSquare, Plus, Settings, Wrench } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthContext";
 import { Logo } from "@/components/landing/Logo";
 import { useTenant } from "./TenantContext";
 
@@ -16,7 +17,7 @@ const nav: { label: string; icon: typeof FileText; href?: string; soon?: boolean
   { label: "Agent Tools", icon: Wrench, href: "/dashboard/tools" },
   { label: "Conversations", icon: MessagesSquare, soon: true },
   { label: "Analytics", icon: BarChart3, soon: true },
-  { label: "Settings", icon: Settings, soon: true },
+  { label: "Settings", icon: Settings, href: "/dashboard/settings" },
 ];
 
 function TenantSwitcher() {
@@ -116,10 +117,27 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="mt-auto rounded-2xl border border-line bg-gradient-to-br from-violet/15 to-accent/10 p-4 text-sm text-muted">
-        <p className="font-medium text-foreground">Phase 4 · Agent tools</p>
-        <p className="mt-1">Bookings, order lookup and human hand-off. Logins come in Phase 5.</p>
-      </div>
+      <UserMenu />
     </aside>
+  );
+}
+
+function UserMenu() {
+  const { me, logout } = useAuth();
+  const initials = me.name.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+  return (
+    <div className="mt-auto flex items-center gap-3 rounded-2xl border border-line bg-white/[0.03] p-3">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet to-cyan text-sm font-semibold">
+        {initials}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{me.name}</p>
+        <p className="truncate text-xs text-muted">{me.email}</p>
+      </div>
+      <button onClick={logout} title="Log out" aria-label="Log out"
+        className="grid h-9 w-9 place-items-center rounded-lg text-muted transition-colors hover:bg-white/10 hover:text-foreground">
+        <LogOut size={16} />
+      </button>
+    </div>
   );
 }

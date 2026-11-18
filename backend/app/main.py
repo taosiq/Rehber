@@ -3,16 +3,17 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import update
 
-from app.api import business, chat, documents, health, search, tenants
+from app.api import auth, business, chat, documents, health, keys, public, search, tenants
 from app.core.config import get_settings
+from app.core.middleware import SecurityHeaders, SplitCORS
 from app.db.session import SessionLocal
 from app.models import Document
 from app.services.embeddings import get_embedder
 
 settings = get_settings()
+settings.check_production_safety()
 logging.basicConfig(level=logging.INFO)
 
 
@@ -38,15 +39,21 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Rehber API", version="0.4.0", lifespan=lifespan)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+is_prod = settings.environment == "production"
+app = FastAPI(
+    title="Rehber API",
+    version="0.5.0",
+    lifespan=lifespan,
+    # Interactive API docs only outside production.
+    docs_url=None if is_prod else "/docs",
+    redoc_url=None,
+    openapi_url=None if is_prod else "/openapi.json",
 )
 
-for r in (health.router, tenants.router, documents.router, search.router, chat.router, business.router):
+# The last added middleware runs first: CORS handles preflights before anything else.
+app.add_middleware(SecurityHeaders)
+app.add_middleware(SplitCORS, dashboard_origins=settings.cors_origins)
+
+for r in (health.router, auth.router, tenants.router, documents.router, search.router, chat.router,
+          business.router, keys.router, public.router):
     app.include_router(r, prefix="/api")
