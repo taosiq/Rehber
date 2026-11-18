@@ -182,3 +182,60 @@ class Order(TimestampMixin, Base):
     estimated_delivery: Mapped[date | None] = mapped_column(Date)
 
     __table_args__ = (UniqueConstraint("tenant_id", "order_number", name="uq_orders_number"),)
+
+
+# ---------------------------------------------------------------- auth
+
+ROLES = {"member": 1, "admin": 2, "owner": 3}  # higher = more permissions
+
+
+class User(TimestampMixin, Base):
+    """A dashboard user (business owner or staff)."""
+
+    __tablename__ = "users"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    email: Mapped[str] = mapped_column(String(320), unique=True, index=True)  # stored lower-case
+    name: Mapped[str] = mapped_column(String(200))
+    password_hash: Mapped[str] = mapped_column(String(255))
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Membership(TimestampMixin, Base):
+    """Which users can access which business, and with what role."""
+
+    __tablename__ = "memberships"
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+    role: Mapped[str] = mapped_column(String(20), default="owner")  # owner | admin | member
+
+
+class AuthSession(TimestampMixin, Base):
+    """A logged-in browser. Only the SHA-256 of the cookie token is stored."""
+
+    __tablename__ = "auth_sessions"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    csrf_token: Mapped[str] = mapped_column(String(64))  # sent back in X-CSRF-Token on changes
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ip: Mapped[str | None] = mapped_column(String(64))
+    user_agent: Mapped[str | None] = mapped_column(String(300))
+
+
+class ApiKey(TimestampMixin, Base):
+    """Keys for the website widget (publishable) and server integrations (secret)."""
+
+    __tablename__ = "api_keys"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    kind: Mapped[str] = mapped_column(String(20))  # publishable | secret
+    prefix: Mapped[str] = mapped_column(String(16))  # first characters, shown to identify the key
+    key_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    allowed_origins: Mapped[list] = mapped_column(JSON, default=list)  # publishable only
+    created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

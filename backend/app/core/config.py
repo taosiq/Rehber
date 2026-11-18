@@ -40,7 +40,24 @@ class Settings(BaseSettings):
     chunk_overlap: int = 150
     max_upload_mb: int = 20
 
+    # Dashboard origins allowed to call the API with cookies.
     cors_origins: list[str] = ["http://localhost:3000"]
+
+    # --- Security ---
+    # Signs widget conversation tokens. MUST be a long random value outside development.
+    secret_key: str = "dev-insecure-change-me"
+    session_days: int = 14
+    session_cookie: str = "rehber_session"
+    cookie_secure: bool = False  # True in production (HTTPS only)
+    cookie_domain: str | None = None  # e.g. ".rehber.app" when API and dashboard are on subdomains
+
+    def check_production_safety(self) -> None:
+        """Refuse to start in production with development defaults."""
+        if self.environment == "production":
+            if self.secret_key == "dev-insecure-change-me" or len(self.secret_key) < 32:
+                raise RuntimeError("Set a strong SECRET_KEY (32+ random characters) in production.")
+            if not self.cookie_secure:
+                raise RuntimeError("COOKIE_SECURE must be true in production.")
 
     @property
     def async_database_url(self) -> str:

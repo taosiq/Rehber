@@ -7,6 +7,8 @@ import re
 
 os.environ["ENVIRONMENT"] = "test"
 os.environ["DATABASE_URL"] = "postgresql+asyncpg://rehber:rehber@localhost:5432/rehber_test"
+os.environ["REDIS_URL"] = "redis://localhost:6379/15"  # separate Redis DB, flushed per test
+os.environ["SECRET_KEY"] = "test-secret-key-0123456789-abcdefghijklmnop"
 
 import numpy as np  # noqa: E402
 import pytest  # noqa: E402
@@ -15,6 +17,7 @@ from httpx import ASGITransport, AsyncClient  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
 from app.core.config import get_settings  # noqa: E402
+from app.core.ratelimit import get_redis, reset_redis_client  # noqa: E402
 from app.db.session import Base, engine  # noqa: E402
 from app.main import app  # noqa: E402
 from app.services.embeddings import set_embedder  # noqa: E402
@@ -113,17 +116,47 @@ def fake_llm():
 @pytest_asyncio.fixture(autouse=True)
 async def fresh_db():
     set_embedder(FakeEmbedder())
+    reset_redis_client()  # each test has its own event loop
+    await get_redis().flushdb()
     async with engine.begin() as conn:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     yield
     set_embedder(None)
+    await get_redis().aclose()
+    reset_redis_client()
+
+
+PASSWORD = "correct-horse-battery-9"
+
+
+def new_client() -> AsyncClient:
+    return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+
+
+async def login_as(c: AsyncClient, email: str, name: str = "Test User") -> dict:
+    """Sign up (or log in) and attach the CSRF header, like the dashboard does."""
+    res = await c.post("/api/auth/signup", json={"name": name, "email": email, "password": PASSWORD})
+    if res.status_code == 409:
+        res = await c.post("/api/auth/login", json={"email": email, "password": PASSWORD})
+    assert res.status_code in (200, 201), res.text
+    me = res.json()
+    c.headers["X-CSRF-Token"] = me["csrf_token"]
+    return me
 
 
 @pytest_asyncio.fixture
 async def client():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+    """A logged-in business owner."""
+    async with new_client() as c:
+        await login_as(c, "owner@example.com", "Owner")
+        yield c
+
+
+@pytest_asyncio.fixture
+async def anon_client():
+    async with new_client() as c:
         yield c
 
 

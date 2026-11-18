@@ -1,6 +1,6 @@
 /** Streaming chat client: POSTs a message and parses the Server-Sent Events reply. */
 
-import { API_URL, ApiError } from "./api";
+import { ApiError, apiFetch } from "./api";
 
 export type ChatSource = {
   n: number;
@@ -80,7 +80,7 @@ export async function streamChat(
 ) {
   let res: Response;
   try {
-    res = await fetch(`${API_URL}/tenants/${tenantId}/chat`, {
+    res = await apiFetch(`/tenants/${tenantId}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -88,9 +88,12 @@ export async function streamChat(
     });
   } catch (e) {
     if ((e as Error).name === "AbortError") return;
-    throw new ApiError("Can't reach the Rehber API. Is the backend running on port 8000?");
+    throw e;
   }
-  if (!res.ok || !res.body) throw new ApiError(`Chat failed (${res.status})`);
+  if (!res.ok || !res.body) {
+    const detail = (await res.json().catch(() => null))?.detail;
+    throw new ApiError(typeof detail === "string" ? detail : `Chat failed (${res.status})`, res.status);
+  }
 
   const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
   let buffer = "";
@@ -124,9 +127,7 @@ export async function streamChat(
 }
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`).catch(() => {
-    throw new ApiError("Can't reach the Rehber API.");
-  });
+  const res = await apiFetch(path);
   if (!res.ok) throw new ApiError(`Request failed (${res.status})`);
   return res.json();
 }

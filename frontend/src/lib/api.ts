@@ -37,22 +37,86 @@ export type SearchHit = {
 
 export type SearchResponse = { query: string; hits: SearchHit[]; took_ms: number };
 
-export class ApiError extends Error {}
+export class ApiError extends Error {
+  constructor(message: string, public status = 0) {
+    super(message);
+  }
+}
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+// ---------- session plumbing ----------
+// The session lives in an HttpOnly cookie (JavaScript can't read it). The CSRF token is
+// kept only in memory and sent on every state-changing request.
+let csrfToken: string | null = null;
+let onUnauthorized: (() => void) | null = null;
+
+export const session = {
+  setCsrf: (t: string | null) => { csrfToken = t; },
+  onUnauthorized: (fn: (() => void) | null) => { onUnauthorized = fn; },
+};
+
+/** fetch() with cookies + CSRF header. Used by every API call. */
+export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const method = (init.method ?? "GET").toUpperCase();
+  const headers = new Headers(init.headers);
+  if (!["GET", "HEAD", "OPTIONS"].includes(method) && csrfToken) headers.set("X-CSRF-Token", csrfToken);
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, init);
-  } catch {
+    res = await fetch(`${API_URL}${path}`, { ...init, headers, credentials: "include" });
+  } catch (e) {
+    if ((e as Error).name === "AbortError") throw e;
     throw new ApiError("Can't reach the Rehber API. Is the backend running on port 8000?");
   }
+  if (res.status === 401 && !path.startsWith("/auth/")) onUnauthorized?.();
+  return res;
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await apiFetch(path, init);
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     const detail = body?.detail;
-    throw new ApiError(typeof detail === "string" ? detail : `Request failed (${res.status})`);
+    const first = Array.isArray(detail) ? detail[0]?.msg?.replace(/^Value error, /, "") : null;
+    throw new ApiError(typeof detail === "string" ? detail : first ?? `Request failed (${res.status})`, res.status);
   }
   return (res.status === 204 ? undefined : await res.json()) as T;
 }
+
+// ---------- auth ----------
+
+export type Me = {
+  id: string;
+  email: string;
+  name: string;
+  csrf_token: string;
+  tenants: { id: string; name: string; role: "owner" | "admin" | "member" }[];
+};
+
+export const authApi = {
+  me: () => request<Me>("/auth/me"),
+  login: (email: string, password: string) => request<Me>("/auth/login", json({ email, password })),
+  signup: (name: string, email: string, password: string) => request<Me>("/auth/signup", json({ name, email, password })),
+  logout: () => request<void>("/auth/logout", { method: "POST" }),
+};
+
+// ---------- API keys ----------
+
+export type ApiKeyItem = {
+  id: string;
+  name: string;
+  kind: "publishable" | "secret";
+  prefix: string;
+  allowed_origins: string[];
+  created_at: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+};
+
+export const keysApi = {
+  list: (tid: string) => request<ApiKeyItem[]>(`/tenants/${tid}/api-keys`),
+  create: (tid: string, body: { name: string; kind: ApiKeyItem["kind"]; allowed_origins: string[] }) =>
+    request<ApiKeyItem & { key: string }>(`/tenants/${tid}/api-keys`, json(body)),
+  revoke: (tid: string, id: string) => request<void>(`/tenants/${tid}/api-keys/${id}`, { method: "DELETE" }),
+};
 
 const json = (body: unknown): RequestInit => ({
   method: "POST",

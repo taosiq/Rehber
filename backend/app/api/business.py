@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_tenant
+from app.api.deps import get_tenant, require_role
 from app.db.session import get_db
 from app.models import Appointment, Order, Tenant
 from app.services.business import BusinessSettings, load_settings
@@ -26,7 +26,7 @@ async def get_settings_(tenant: Tenant = Depends(get_tenant)) -> BusinessSetting
     return load_settings(tenant.settings)
 
 
-@router.put("/settings", response_model=BusinessSettings)
+@router.put("/settings", response_model=BusinessSettings, dependencies=[Depends(require_role("admin"))])
 async def put_settings(
     body: BusinessSettings, tenant: Tenant = Depends(get_tenant), db: AsyncSession = Depends(get_db)
 ) -> BusinessSettings:
@@ -118,7 +118,7 @@ async def list_orders(tenant: Tenant = Depends(get_tenant), db: AsyncSession = D
     return list((await db.scalars(stmt)).all())
 
 
-@router.post("/orders", status_code=204)
+@router.post("/orders", status_code=204, dependencies=[Depends(require_role("admin"))])
 async def upsert_orders(
     body: list[OrderIn], tenant: Tenant = Depends(get_tenant), db: AsyncSession = Depends(get_db)
 ) -> None:
@@ -126,7 +126,7 @@ async def upsert_orders(
     await _upsert_orders(db, tenant.id, body)
 
 
-@router.post("/orders/demo", status_code=204)
+@router.post("/orders/demo", status_code=204, dependencies=[Depends(require_role("admin"))])
 async def load_demo_orders(tenant: Tenant = Depends(get_tenant), db: AsyncSession = Depends(get_db)) -> None:
     """Add a few sample orders so the order-lookup tool can be tried right away."""
     today = date.today()

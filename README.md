@@ -54,6 +54,25 @@ START ─▶ agent (LLM + tools) ──tool calls?──▶ tools ─▶ agent �
 - **Tenant isolation:** every search and document query filters on `tenant_id`, and there are tests proving one business can't see another's data.
 - **Safe URL ingestion:** private and localhost addresses are blocked (SSRF protection). The crawler identifies itself honestly, and sites that refuse it get a clear error.
 
+## Security
+
+| Area | How it's protected |
+|---|---|
+| Passwords | Argon2id (64 MiB, t=3), auto-rehash; min 10 chars. Unknown email and wrong password get the same message and take the same time (dummy hash), so emails can't be enumerated |
+| Sessions | 256-bit random token in an `HttpOnly`, `SameSite=Lax` cookie (`Secure` in production); only its SHA-256 is stored. New token per login (no fixation), 14-day expiry, real logout |
+| CSRF | Per-session synchronizer token, required in `X-CSRF-Token` on every non-GET request |
+| Tenant isolation | Every `/tenants/{id}/…` route requires membership and returns **404** to non-members (no existence leak). Roles: owner > admin > member; config changes need admin |
+| Brute force / abuse | Redis rate limits: login per IP and per account, sign-up per IP, widget per key and per visitor, server API per key. **Fails closed** if Redis is down |
+| API keys | `pk_` publishable (chat only, only from listed origins) and `sk_` secret (server-to-server, can't chat). Shown once, SHA-256 stored, revocable, `last_used_at` tracked |
+| Widget conversations | Continuing one needs an HMAC-signed conversation token; dashboard conversations can't be reached from the widget |
+| AI tools | Tools are bound server-side to one tenant/conversation; bookings need confirmation in a later turn; order lookups need matching contact details |
+| Ingestion | SSRF protection (private/loopback IPs blocked, redirects re-checked), PDF magic-byte and size checks |
+| HTTP | Split CORS (dashboard with credentials, `/api/public` without), `nosniff`, `X-Frame-Options: DENY`, `no-store` on auth, no API docs in production, startup refuses insecure production config |
+
+Automated: `tests/test_security.py` attacks every route without credentials and as another user, plus CSRF, roles, rate limits, key misuse, CORS and headers.
+
+**Known gaps (planned):** email verification and password reset need an email provider (Phase 9); team invitations UI (Phase 8).
+
 ## Layout
 
 ```
@@ -95,7 +114,7 @@ Tests (one-time setup: `docker exec rehber-db-1 createdb -U rehber rehber_test`)
 - [x] 2. Document ingestion: PDF/URL/text upload, chunking, local embeddings into pgvector, search, Knowledge dashboard
 - [x] 3. RAG chat: streaming answers (SSE), citations, language detection, conversation memory, Chat Playground
 - [x] 4. LangGraph agent with tools: availability, two-step booking, order lookup, human hand-off, Agent Tools dashboard
-- [ ] 5. Multi-tenancy: auth, API keys, data kept separate per business
+- [x] 5. Security: accounts (Argon2id), HttpOnly sessions + CSRF, per-business roles, rate limits, widget/server API keys, signed widget conversations
 - [ ] 6. Embeddable chat widget + 8 languages (TR, EN, DE, RU, FR, AR, FA, UR; incl. RTL)
 - [ ] 7. Evaluation set, Langfuse tracing, cost and speed tracking per business
 - [ ] 8. Full admin dashboard

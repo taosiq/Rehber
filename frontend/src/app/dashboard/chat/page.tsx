@@ -6,7 +6,7 @@ import clsx from "clsx";
 import { ArrowUp, CheckCircle2, MessageSquarePlus, MessagesSquare, Square, Sparkles, UserRound } from "lucide-react";
 import { useTenant } from "@/components/dashboard/TenantContext";
 import { MessageBubble, type UiMessage } from "@/components/dashboard/chat/MessageBubble";
-import { API_URL } from "@/lib/api";
+import { toolsApi } from "@/lib/api";
 import { chatApi, isRtlText, streamChat, type ConversationSummary } from "@/lib/chat";
 
 const suggestions = [
@@ -239,7 +239,7 @@ export default function ChatPlayground() {
                 <span className="flex-1">This conversation was handed to your team. The customer is waiting for a human reply.</span>
                 <button
                   onClick={async () => {
-                    await fetch(`${API_URL}/tenants/${tid}/conversations/${conversationId}/resolve`, { method: "POST" });
+                    if (tid) await toolsApi.resolve(tid, conversationId);
                     setStatus("resolved");
                     loadHistory();
                   }}

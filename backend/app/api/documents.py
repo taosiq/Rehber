@@ -6,7 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Up
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_tenant
+from app.api.deps import get_tenant, require_role
 from app.core.config import BACKEND_DIR, get_settings
 from app.db.session import get_db
 from app.models import Document, Tenant
@@ -41,7 +41,7 @@ async def _get_doc(db: AsyncSession, tenant: Tenant, document_id: uuid.UUID) -> 
     return doc
 
 
-@router.post("/upload", response_model=DocumentOut, status_code=202)
+@router.post("/upload", response_model=DocumentOut, status_code=202, dependencies=[Depends(require_role("admin"))])
 async def upload_pdf(
     background: BackgroundTasks,
     file: UploadFile = File(...),
@@ -69,7 +69,7 @@ async def upload_pdf(
     return doc
 
 
-@router.post("/url", response_model=DocumentOut, status_code=202)
+@router.post("/url", response_model=DocumentOut, status_code=202, dependencies=[Depends(require_role("admin"))])
 async def add_url(
     body: UrlDocumentCreate,
     background: BackgroundTasks,
@@ -85,7 +85,7 @@ async def add_url(
     return doc
 
 
-@router.post("/text", response_model=DocumentOut, status_code=202)
+@router.post("/text", response_model=DocumentOut, status_code=202, dependencies=[Depends(require_role("admin"))])
 async def add_text(
     body: TextDocumentCreate,
     background: BackgroundTasks,
@@ -117,7 +117,7 @@ async def get_document(
     return await _get_doc(db, tenant, document_id)
 
 
-@router.post("/{document_id}/reprocess", response_model=DocumentOut, status_code=202)
+@router.post("/{document_id}/reprocess", response_model=DocumentOut, status_code=202, dependencies=[Depends(require_role("admin"))])
 async def reprocess_document(
     document_id: uuid.UUID,
     background: BackgroundTasks,
@@ -132,7 +132,7 @@ async def reprocess_document(
     return doc
 
 
-@router.delete("/{document_id}", status_code=204)
+@router.delete("/{document_id}", status_code=204, dependencies=[Depends(require_role("admin"))])
 async def delete_document(
     document_id: uuid.UUID, tenant: Tenant = Depends(get_tenant), db: AsyncSession = Depends(get_db)
 ) -> None:
