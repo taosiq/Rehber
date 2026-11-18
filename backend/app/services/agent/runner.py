@@ -58,8 +58,10 @@ def _friendly_error(exc: Exception) -> str:
 
 
 async def run_turn(
-    db: AsyncSession, tenant: Tenant, question: str, conversation_id: uuid.UUID | None, channel: str = "playground"
+    db: AsyncSession, tenant: Tenant, question: str, conversation_id: uuid.UUID | None, channel: str = "playground",
+    language_hint: str | None = None,
 ) -> AsyncIterator[dict]:
+    """`language_hint` (e.g. the widget's UI language) is only used when the text itself is unclear."""
     cfg = get_settings()
     started = time.perf_counter()
     biz = load_settings(tenant.settings)
@@ -88,7 +90,7 @@ async def run_turn(
     )[::-1]
 
     prev_lang = next((m.language for m in reversed(history) if m.role == "user" and m.language), None)
-    language = detect_language(question, fallback=prev_lang)
+    language = detect_language(question, fallback=prev_lang or language_hint)
     user_msg = Message(tenant_id=tenant.id, conversation_id=convo.id, role="user", content=question, language=language)
     db.add(user_msg)
     await db.commit()

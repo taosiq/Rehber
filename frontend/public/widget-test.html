@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>Sample website · Rehber widget test</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Georgia,"Times New Roman",serif;color:#1f2937;background:#f7f4ee}
+    .bar{background:#1f2937;color:#f7f4ee;font:13px system-ui,sans-serif;text-align:center;padding:8px}
+    nav{display:flex;justify-content:space-between;align-items:center;padding:22px 6vw}
+    nav b{font-size:24px;letter-spacing:.02em}
+    nav span{font:15px system-ui,sans-serif;margin-left:28px;color:#4b5563}
+    .hero{display:grid;grid-template-columns:1.1fr 1fr;gap:5vw;align-items:center;padding:6vh 6vw 10vh}
+    h1{font-size:clamp(40px,5.5vw,76px);line-height:1.02;margin:0;font-weight:400}
+    h1 i{color:#b45309}
+    p.lead{font:19px/1.6 system-ui,sans-serif;color:#4b5563;max-width:520px;margin:24px 0 32px}
+    .btn{display:inline-block;font:600 16px system-ui,sans-serif;background:#1f2937;color:#fff;padding:15px 26px;border-radius:12px;border:0;cursor:pointer}
+    .art{aspect-ratio:4/5;border-radius:220px 220px 24px 24px;background:radial-gradient(circle at 30% 20%,#fcd34d,#f59e0b 40%,#b45309 75%,#78350f);box-shadow:0 30px 80px -20px rgba(120,53,15,.5)}
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding:0 6vw 12vh}
+    .card{background:#fff;border-radius:20px;padding:28px;font:16px/1.6 system-ui,sans-serif;color:#4b5563}
+    .card h3{font:400 26px Georgia,serif;color:#1f2937;margin:0 0 8px}
+    .setup{position:fixed;inset:0;display:grid;place-items:center;background:rgba(15,15,25,.6);font:15px system-ui,sans-serif}
+    .setup form{background:#fff;padding:28px;border-radius:18px;width:min(520px,92vw)}
+    .setup input{width:100%;padding:12px;border:1px solid #ddd;border-radius:10px;margin:6px 0 14px;font:14px monospace}
+    .note{position:fixed;left:16px;bottom:16px;font:12px system-ui,sans-serif;background:#1f2937;color:#e5e7eb;padding:8px 12px;border-radius:10px;opacity:.85}
+    @media (max-width:800px){.hero,.cards{grid-template-columns:1fr}.art{display:none}nav span{display:none}}
+  </style>
+</head>
+<body>
+  <div class="bar">Sample website for testing your Rehber chat widget, not a real business</div>
+  <nav><b>Lale Clinic</b><div><span>Treatments</span><span>Prices</span><span>About</span><span>Contact</span></div></nav>
+  <section class="hero">
+    <div>
+      <h1>Care that speaks <i>your language.</i></h1>
+      <p class="lead">This page shows what your customers see. Click the chat bubble in the corner and ask anything about your business, in Turkish, English, German, Russian, French, Arabic, Persian or Urdu.</p>
+      <button class="btn" onclick="window.Rehber && Rehber.open()">Ask us anything</button>
+    </div>
+    <div class="art"></div>
+  </section>
+  <section class="cards">
+    <div class="card"><h3>Book online</h3>The assistant checks real free times and books after you confirm.</div>
+    <div class="card"><h3>Order status</h3>Ask about an order with its number and your email or phone.</div>
+    <div class="card"><h3>Talk to a person</h3>Ask for a human at any time and the team gets notified.</div>
+  </section>
+  <div class="note" id="note"></div>
+
+  <script>
+    (function () {
+      // The key is passed in the URL fragment (#key=...), which browsers never send to a server.
+      var params = new URLSearchParams(location.hash.slice(1));
+      var key = params.get("key");
+      var api = params.get("api") || "http://localhost:8000/api";
+      function load(k, a) {
+        var s = document.createElement("script");
+        s.src = "/widget.js";
+        s.defer = true;
+        s.setAttribute("data-key", k);
+        s.setAttribute("data-api", a);
+        document.body.appendChild(s);
+        document.getElementById("note").textContent = "Widget key " + k.slice(0, 11) + "… · API " + a;
+      }
+      if (key) return load(key, api);
+
+      var wrap = document.createElement("div");
+      wrap.className = "setup";
+      var form = document.createElement("form");
+      var h = document.createElement("h2");
+      h.textContent = "Paste a widget key";
+      var p = document.createElement("p");
+      p.textContent = "Create one on the Website Widget page in the dashboard, with " + location.origin + " allowed.";
+      var input = document.createElement("input");
+      input.placeholder = "pk_...";
+      input.required = true;
+      var btn = document.createElement("button");
+      btn.className = "btn";
+      btn.textContent = "Load widget";
+      form.append(h, p, input, btn);
+      wrap.appendChild(form);
+      document.body.appendChild(wrap);
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var k = input.value.trim();
+        if (k.indexOf("pk_") !== 0) { p.textContent = "That is not a widget key. Widget keys start with pk_."; return; }
+        wrap.remove();
+        load(k, api);
+      });
+    })();
+  </script>
+</body>
+</html>
