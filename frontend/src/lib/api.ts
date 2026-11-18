@@ -293,3 +293,76 @@ export const analyticsApi = {
   overview: (days: number) => request<Overview>(`/analytics/overview?days=${days}`),
   latestEval: () => request<EvalReport>("/evals/latest"),
 };
+
+// ---------- inbox, team, account, business (Phase 8) ----------
+
+const send = (method: string, body?: unknown): RequestInit => ({
+  method,
+  headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+  body: body === undefined ? undefined : JSON.stringify(body),
+});
+
+export type Role = "owner" | "admin" | "member";
+export type InboxCounts = { needs_human: number; unread: number };
+
+export const inboxApi = {
+  list: (tid: string, f: { status?: string; channel?: string; q?: string; unread?: boolean } = {}) => {
+    const qs = new URLSearchParams();
+    if (f.status) qs.set("status", f.status);
+    if (f.channel) qs.set("channel", f.channel);
+    if (f.q?.trim()) qs.set("q", f.q.trim());
+    if (f.unread) qs.set("unread", "true");
+    return request<import("./chat").ConversationSummary[]>(`/tenants/${tid}/conversations?${qs}`);
+  },
+  get: (tid: string, cid: string) => request<import("./chat").ConversationSummary>(`/tenants/${tid}/conversations/${cid}`),
+  messages: (tid: string, cid: string) => request<import("./chat").StoredMessage[]>(`/tenants/${tid}/conversations/${cid}/messages`),
+  counts: (tid: string) => request<InboxCounts>(`/tenants/${tid}/inbox/counts`),
+  seen: (tid: string, cid: string) => request<void>(`/tenants/${tid}/conversations/${cid}/seen`, send("POST")),
+  takeover: (tid: string, cid: string) => request<import("./chat").ConversationSummary>(`/tenants/${tid}/conversations/${cid}/takeover`, send("POST")),
+  release: (tid: string, cid: string) => request<import("./chat").ConversationSummary>(`/tenants/${tid}/conversations/${cid}/release`, send("POST")),
+  resolve: (tid: string, cid: string) => request<void>(`/tenants/${tid}/conversations/${cid}/resolve`, send("POST")),
+  reply: (tid: string, cid: string, text: string) =>
+    request<import("./chat").StoredMessage>(`/tenants/${tid}/conversations/${cid}/reply`, send("POST", { text })),
+};
+
+export type Member = { user_id: string; name: string; email: string; role: Role; joined_at: string; is_you: boolean };
+export type Invitation = { id: string; email: string; role: Role; invited_by: string | null; created_at: string; expires_at: string };
+export type InvitationPreview = { business: string; role: Role; email: string; invited_by: string | null; expires_at: string };
+
+export const teamApi = {
+  members: (tid: string) => request<Member[]>(`/tenants/${tid}/members`),
+  setRole: (tid: string, uid: string, role: Role) => request<Member>(`/tenants/${tid}/members/${uid}`, send("PATCH", { role })),
+  remove: (tid: string, uid: string) => request<void>(`/tenants/${tid}/members/${uid}`, send("DELETE")),
+  invitations: (tid: string) => request<Invitation[]>(`/tenants/${tid}/invitations`),
+  invite: (tid: string, email: string, role: Role) =>
+    request<{ id: string; email: string; role: Role; expires_at: string; token: string }>(`/tenants/${tid}/invitations`, send("POST", { email, role })),
+  revoke: (tid: string, id: string) => request<void>(`/tenants/${tid}/invitations/${id}`, send("DELETE")),
+  preview: (token: string) => request<InvitationPreview>(`/invitations/${encodeURIComponent(token)}`),
+  accept: (token: string) => request<{ tenant_id: string }>(`/invitations/${encodeURIComponent(token)}/accept`, send("POST")),
+};
+
+export type SessionInfo = { id: string; created_at: string; last_seen_at: string | null; ip: string | null; user_agent: string | null; current: boolean };
+
+export const accountApi = {
+  updateName: (name: string) => request<Me>("/auth/me", send("PATCH", { name })),
+  changePassword: (current_password: string, new_password: string) =>
+    request<void>("/auth/password", send("POST", { current_password, new_password })),
+  sessions: () => request<SessionInfo[]>("/auth/sessions"),
+  revokeOthers: () => request<void>("/auth/sessions/revoke-others", send("POST")),
+};
+
+export const businessApi = {
+  update: (tid: string, body: { name?: string; default_language?: string }) => request<Tenant>(`/tenants/${tid}`, send("PATCH", body)),
+  remove: (tid: string, confirm_name: string) => request<void>(`/tenants/${tid}/delete`, send("POST", { confirm_name })),
+};
+
+export type OverviewData = {
+  business: { name: string; timezone: string; default_language: string };
+  setup: { documents: boolean; documents_ready: number; documents_total: number; tools: boolean; tested: boolean;
+    widget_key: boolean; widget_live: boolean; team: boolean; tracing: boolean };
+  today: { conversations: number; answers: number; bookings: number; needs_human: number };
+  recent: import("./chat").ConversationSummary[];
+  upcoming: { id: string; code: string; customer_name: string; service: string; start_at: string; conversation_id: string | null }[];
+};
+
+export const overviewApi = { get: (tid: string) => request<OverviewData>(`/tenants/${tid}/overview`) };

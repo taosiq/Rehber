@@ -35,16 +35,24 @@ export type ConversationSummary = {
   title: string | null;
   channel: string;
   status: "open" | "handoff" | "resolved";
+  ai_paused: boolean;
+  assigned_to: { id: string; name: string } | null;
   handoff_reason: string | null;
   handoff_at: string | null;
   customer_contact: string | null;
+  language: string | null;
   message_count: number;
+  unread: boolean;
+  last_message: { role: "user" | "assistant" | "staff"; preview: string; at: string } | null;
+  last_message_at: string | null;
   created_at: string;
 };
 
 export type StoredMessage = {
   id: string;
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "staff";
+  author_name: string | null;
+  created_at: string;
   content: string;
   language: string | null;
   sources: ChatSource[] | null;

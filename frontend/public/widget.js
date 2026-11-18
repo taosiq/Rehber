@@ -19,28 +19,28 @@
 
   // prettier-ignore
   var T = {
-    en: { greeting: "Hi there! 👋 How can we help you today?", placeholder: "Type your message…", send: "Send", status: "Typically replies instantly", powered: "Powered by", newChat: "New conversation", close: "Close chat", open: "Chat with us", sources: "Sources", handoff: "A team member has been notified and will get back to you soon.", error: "Something went wrong. Please try again.", language: "Language", page: "p.", dismiss: "Dismiss",
+    en: { greeting: "Hi there! 👋 How can we help you today?", placeholder: "Type your message…", send: "Send", status: "Typically replies instantly", powered: "Powered by", newChat: "New conversation", close: "Close chat", open: "Chat with us", sources: "Sources", handoff: "A team member has been notified and will get back to you soon.", error: "Something went wrong. Please try again.", language: "Language", page: "p.", dismiss: "Dismiss", team: "Team", paused: "A team member is handling this chat and will reply here.",
       t_search_knowledge: "Searching our documents", t_check_availability: "Checking available times", t_book_appointment: "Booking your appointment", t_get_order_status: "Looking up your order", t_handoff_to_human: "Contacting a team member",
       s_hours: "What are your opening hours?", s_book: "I'd like to book an appointment", s_order: "Where is my order?", s_human: "I'd like to talk to a person" },
-    tr: { greeting: "Merhaba! 👋 Size nasıl yardımcı olabiliriz?", placeholder: "Mesajınızı yazın…", send: "Gönder", status: "Genellikle anında yanıt verir", powered: "Altyapı:", newChat: "Yeni sohbet", close: "Sohbeti kapat", open: "Bizimle sohbet edin", sources: "Kaynaklar", handoff: "Ekibimizden birine haber verildi, en kısa sürede size dönecek.", error: "Bir sorun oluştu. Lütfen tekrar deneyin.", language: "Dil", page: "s.", dismiss: "Kapat",
+    tr: { greeting: "Merhaba! 👋 Size nasıl yardımcı olabiliriz?", placeholder: "Mesajınızı yazın…", send: "Gönder", status: "Genellikle anında yanıt verir", powered: "Altyapı:", newChat: "Yeni sohbet", close: "Sohbeti kapat", open: "Bizimle sohbet edin", sources: "Kaynaklar", handoff: "Ekibimizden birine haber verildi, en kısa sürede size dönecek.", error: "Bir sorun oluştu. Lütfen tekrar deneyin.", language: "Dil", page: "s.", dismiss: "Kapat", team: "Ekip", paused: "Ekibimizden biri bu sohbetle ilgileniyor, yanıtı burada görünecek.",
       t_search_knowledge: "Belgelerimizde arıyor", t_check_availability: "Uygun saatlere bakıyor", t_book_appointment: "Randevunuzu oluşturuyor", t_get_order_status: "Siparişinizi sorguluyor", t_handoff_to_human: "Ekibimize aktarıyor",
       s_hours: "Çalışma saatleriniz nedir?", s_book: "Randevu almak istiyorum", s_order: "Siparişim nerede?", s_human: "Bir yetkiliyle görüşmek istiyorum" },
-    de: { greeting: "Hallo! 👋 Wie können wir Ihnen helfen?", placeholder: "Nachricht schreiben…", send: "Senden", status: "Antwortet in der Regel sofort", powered: "Bereitgestellt von", newChat: "Neuer Chat", close: "Chat schließen", open: "Chatten Sie mit uns", sources: "Quellen", handoff: "Ein Teammitglied wurde benachrichtigt und meldet sich bald bei Ihnen.", error: "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.", language: "Sprache", page: "S.", dismiss: "Schließen",
+    de: { greeting: "Hallo! 👋 Wie können wir Ihnen helfen?", placeholder: "Nachricht schreiben…", send: "Senden", status: "Antwortet in der Regel sofort", powered: "Bereitgestellt von", newChat: "Neuer Chat", close: "Chat schließen", open: "Chatten Sie mit uns", sources: "Quellen", handoff: "Ein Teammitglied wurde benachrichtigt und meldet sich bald bei Ihnen.", error: "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.", language: "Sprache", page: "S.", dismiss: "Schließen", team: "Team", paused: "Ein Teammitglied kümmert sich um diesen Chat und antwortet hier.",
       t_search_knowledge: "Durchsucht unsere Dokumente", t_check_availability: "Prüft freie Termine", t_book_appointment: "Bucht Ihren Termin", t_get_order_status: "Sucht Ihre Bestellung", t_handoff_to_human: "Verbindet mit unserem Team",
       s_hours: "Wie sind Ihre Öffnungszeiten?", s_book: "Ich möchte einen Termin buchen", s_order: "Wo ist meine Bestellung?", s_human: "Ich möchte mit einer Person sprechen" },
-    ru: { greeting: "Здравствуйте! 👋 Чем мы можем помочь?", placeholder: "Напишите сообщение…", send: "Отправить", status: "Обычно отвечает сразу", powered: "Работает на", newChat: "Новый чат", close: "Закрыть чат", open: "Напишите нам", sources: "Источники", handoff: "Мы уведомили сотрудника, он скоро свяжется с вами.", error: "Что-то пошло не так. Попробуйте ещё раз.", language: "Язык", page: "с.", dismiss: "Закрыть",
+    ru: { greeting: "Здравствуйте! 👋 Чем мы можем помочь?", placeholder: "Напишите сообщение…", send: "Отправить", status: "Обычно отвечает сразу", powered: "Работает на", newChat: "Новый чат", close: "Закрыть чат", open: "Напишите нам", sources: "Источники", handoff: "Мы уведомили сотрудника, он скоро свяжется с вами.", error: "Что-то пошло не так. Попробуйте ещё раз.", language: "Язык", page: "с.", dismiss: "Закрыть", team: "Команда", paused: "Сотрудник подключился к чату и ответит здесь.",
       t_search_knowledge: "Ищет в наших документах", t_check_availability: "Проверяет свободное время", t_book_appointment: "Оформляет запись", t_get_order_status: "Ищет ваш заказ", t_handoff_to_human: "Передаёт сотруднику",
       s_hours: "Какой у вас график работы?", s_book: "Хочу записаться на приём", s_order: "Где мой заказ?", s_human: "Хочу поговорить с сотрудником" },
-    fr: { greeting: "Bonjour ! 👋 Comment pouvons-nous vous aider ?", placeholder: "Écrivez votre message…", send: "Envoyer", status: "Répond généralement immédiatement", powered: "Propulsé par", newChat: "Nouvelle discussion", close: "Fermer la discussion", open: "Discutez avec nous", sources: "Sources", handoff: "Un membre de l'équipe a été prévenu et vous répondra rapidement.", error: "Une erreur s'est produite. Veuillez réessayer.", language: "Langue", page: "p.", dismiss: "Fermer",
+    fr: { greeting: "Bonjour ! 👋 Comment pouvons-nous vous aider ?", placeholder: "Écrivez votre message…", send: "Envoyer", status: "Répond généralement immédiatement", powered: "Propulsé par", newChat: "Nouvelle discussion", close: "Fermer la discussion", open: "Discutez avec nous", sources: "Sources", handoff: "Un membre de l'équipe a été prévenu et vous répondra rapidement.", error: "Une erreur s'est produite. Veuillez réessayer.", language: "Langue", page: "p.", dismiss: "Fermer", team: "Équipe", paused: "Un membre de l'équipe s'occupe de cette discussion et vous répondra ici.",
       t_search_knowledge: "Recherche dans nos documents", t_check_availability: "Vérifie les créneaux disponibles", t_book_appointment: "Réserve votre rendez-vous", t_get_order_status: "Recherche votre commande", t_handoff_to_human: "Contacte notre équipe",
       s_hours: "Quels sont vos horaires ?", s_book: "Je voudrais prendre rendez-vous", s_order: "Où est ma commande ?", s_human: "Je voudrais parler à une personne" },
-    ar: { greeting: "مرحباً! 👋 كيف يمكننا مساعدتك اليوم؟", placeholder: "اكتب رسالتك…", send: "إرسال", status: "يرد عادةً على الفور", powered: "مدعوم من", newChat: "محادثة جديدة", close: "إغلاق المحادثة", open: "تحدث معنا", sources: "المصادر", handoff: "تم إبلاغ أحد أعضاء فريقنا وسيتواصل معك قريباً.", error: "حدث خطأ ما. يرجى المحاولة مرة أخرى.", language: "اللغة", page: "ص.", dismiss: "إغلاق",
+    ar: { greeting: "مرحباً! 👋 كيف يمكننا مساعدتك اليوم؟", placeholder: "اكتب رسالتك…", send: "إرسال", status: "يرد عادةً على الفور", powered: "مدعوم من", newChat: "محادثة جديدة", close: "إغلاق المحادثة", open: "تحدث معنا", sources: "المصادر", handoff: "تم إبلاغ أحد أعضاء فريقنا وسيتواصل معك قريباً.", error: "حدث خطأ ما. يرجى المحاولة مرة أخرى.", language: "اللغة", page: "ص.", dismiss: "إغلاق", team: "الفريق", paused: "أحد أعضاء فريقنا يتابع هذه المحادثة وسيرد هنا.",
       t_search_knowledge: "يبحث في مستنداتنا", t_check_availability: "يتحقق من المواعيد المتاحة", t_book_appointment: "يحجز موعدك", t_get_order_status: "يبحث عن طلبك", t_handoff_to_human: "يحوّلك إلى فريقنا",
       s_hours: "ما هي ساعات العمل؟", s_book: "أريد حجز موعد", s_order: "أين طلبي؟", s_human: "أريد التحدث مع شخص" },
-    fa: { greeting: "سلام! 👋 چطور می‌توانیم کمکتان کنیم؟", placeholder: "پیام خود را بنویسید…", send: "ارسال", status: "معمولاً بلافاصله پاسخ می‌دهد", powered: "قدرت‌گرفته از", newChat: "گفتگوی جدید", close: "بستن گفتگو", open: "با ما گفتگو کنید", sources: "منابع", handoff: "به یکی از همکاران ما اطلاع داده شد و به‌زودی با شما تماس می‌گیرد.", error: "مشکلی پیش آمد. لطفاً دوباره تلاش کنید.", language: "زبان", page: "ص.", dismiss: "بستن",
+    fa: { greeting: "سلام! 👋 چطور می‌توانیم کمکتان کنیم؟", placeholder: "پیام خود را بنویسید…", send: "ارسال", status: "معمولاً بلافاصله پاسخ می‌دهد", powered: "قدرت‌گرفته از", newChat: "گفتگوی جدید", close: "بستن گفتگو", open: "با ما گفتگو کنید", sources: "منابع", handoff: "به یکی از همکاران ما اطلاع داده شد و به‌زودی با شما تماس می‌گیرد.", error: "مشکلی پیش آمد. لطفاً دوباره تلاش کنید.", language: "زبان", page: "ص.", dismiss: "بستن", team: "تیم", paused: "یکی از همکاران ما این گفتگو را پیگیری می‌کند و همین‌جا پاسخ می‌دهد.",
       t_search_knowledge: "در اسناد ما جستجو می‌کند", t_check_availability: "زمان‌های آزاد را بررسی می‌کند", t_book_appointment: "نوبت شما را ثبت می‌کند", t_get_order_status: "سفارش شما را پیدا می‌کند", t_handoff_to_human: "شما را به همکاران ما وصل می‌کند",
       s_hours: "ساعات کاری شما چیست؟", s_book: "می‌خواهم نوبت بگیرم", s_order: "سفارش من کجاست؟", s_human: "می‌خواهم با یک شخص صحبت کنم" },
-    ur: { greeting: "السلام علیکم! 👋 ہم آپ کی کیا مدد کر سکتے ہیں؟", placeholder: "اپنا پیغام لکھیں…", send: "بھیجیں", status: "عام طور پر فوری جواب ملتا ہے", powered: "تعاون:", newChat: "نئی گفتگو", close: "گفتگو بند کریں", open: "ہم سے بات کریں", sources: "ذرائع", handoff: "ہماری ٹیم کے ایک رکن کو اطلاع دے دی گئی ہے، وہ جلد آپ سے رابطہ کریں گے۔", error: "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔", language: "زبان", page: "ص.", dismiss: "بند کریں",
+    ur: { greeting: "السلام علیکم! 👋 ہم آپ کی کیا مدد کر سکتے ہیں؟", placeholder: "اپنا پیغام لکھیں…", send: "بھیجیں", status: "عام طور پر فوری جواب ملتا ہے", powered: "تعاون:", newChat: "نئی گفتگو", close: "گفتگو بند کریں", open: "ہم سے بات کریں", sources: "ذرائع", handoff: "ہماری ٹیم کے ایک رکن کو اطلاع دے دی گئی ہے، وہ جلد آپ سے رابطہ کریں گے۔", error: "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔", language: "زبان", page: "ص.", dismiss: "بند کریں", team: "ٹیم", paused: "ہماری ٹیم کا ایک رکن یہ گفتگو دیکھ رہا ہے اور یہیں جواب دے گا۔",
       t_search_knowledge: "ہماری دستاویزات میں تلاش ہو رہی ہے", t_check_availability: "دستیاب اوقات دیکھے جا رہے ہیں", t_book_appointment: "آپ کی اپوائنٹمنٹ بک ہو رہی ہے", t_get_order_status: "آپ کا آرڈر تلاش ہو رہا ہے", t_handoff_to_human: "ہماری ٹیم سے رابطہ ہو رہا ہے",
       s_hours: "آپ کے اوقاتِ کار کیا ہیں؟", s_book: "میں اپوائنٹمنٹ بک کرنا چاہتا/چاہتی ہوں", s_order: "میرا آرڈر کہاں ہے؟", s_human: "میں کسی شخص سے بات کرنا چاہتا/چاہتی ہوں" },
   };
@@ -99,6 +99,12 @@ header::after{content:"";position:absolute;inset:0;background:linear-gradient(11
 .msg.bot{align-self:flex-start}
 .bubble{padding:10px 14px;border-radius:18px;word-wrap:break-word;overflow-wrap:anywhere;white-space:normal}
 .user .bubble{background:var(--a);color:var(--on);border-end-end-radius:6px}
+.msg.staff{align-self:flex-start}
+.staff .bubble{background:#ecfdf5;color:#064e3b;border:1px solid #a7f3d0;border-end-start-radius:6px}
+.who{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:#047857;padding-inline-start:4px}
+.who i{font-style:normal;font-weight:600;font-size:10px;letter-spacing:.04em;text-transform:uppercase;background:#d1fae5;padding:1px 6px;border-radius:6px}
+.badge{position:absolute;top:-3px;right:-3px;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#ef4444;color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center;border:2px solid #fff;transform:scale(0);transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
+.badge.show{transform:scale(1)}
 .bot .bubble{background:#f2f2f6;border-end-start-radius:6px}
 .bubble p{margin:0}.bubble p+p,.bubble p+ul,.bubble ul+p,.bubble p+ol,.bubble ol+p{margin-top:8px}
 .bubble ul,.bubble ol{margin:0;padding-inline-start:20px}
@@ -326,6 +332,10 @@ textarea::placeholder{color:#9a9aa8}
     this.sending = false;
     this.restored = false;
     this.items = []; // rendered messages: {role, text, cited, node, bubble}
+    this.seen = {}; // server message ids already shown
+    this.aiPaused = false; // a team member has taken over
+    this.unread = 0; // team replies that arrived while the chat was closed
+    this.pollTimer = null;
 
     this.host = el("div");
     this.host.setAttribute("data-rehber-widget", "");
@@ -412,6 +422,9 @@ textarea::placeholder{color:#9a9aa8}
     this.launcher.setAttribute("aria-expanded", "false");
     this.launcher.appendChild(svg("chat", "ic ic-chat"));
     this.launcher.appendChild(svg("x", "ic ic-x"));
+    this.badge = el("span", "badge");
+    this.badge.setAttribute("aria-hidden", "true");
+    this.launcher.appendChild(this.badge);
     rb.appendChild(panel);
     rb.appendChild(this.teaser);
     rb.appendChild(this.launcher);
@@ -523,8 +536,14 @@ textarea::placeholder{color:#9a9aa8}
   };
 
   /** Adds a message bubble. `welcome` bubbles are UI only and are not part of the conversation. */
-  Widget.prototype.addBubble = function (role, text, cited, welcome) {
+  Widget.prototype.addBubble = function (role, text, cited, welcome, author) {
     var node = el("div", "msg " + role);
+    if (role === "staff") {
+      // A reply typed by a person on the business's team (first name only).
+      var who = el("div", "who", author || "");
+      who.appendChild(el("i", null, this.t("team")));
+      node.appendChild(who);
+    }
     var bubble = el("div", "bubble");
     bubble.dir = "auto";
     node.appendChild(bubble);
@@ -597,12 +616,17 @@ textarea::placeholder{color:#9a9aa8}
       this.items = [];
       var self = this;
       h.messages.forEach(function (m) {
-        var item = self.addBubble(m.role === "user" ? "user" : "bot", m.content, m.cited, false);
+        if (m.id) self.seen[m.id] = 1;
+        var role = m.role === "user" ? "user" : m.role === "staff" ? "staff" : "bot";
+        var item = self.addBubble(role, m.content, m.cited, false, m.author);
         item.node.style.animation = "none";
       });
       this.status = h.status;
-      if (h.status === "handoff") this.notice(this.t("handoff"));
+      this.aiPaused = !!h.ai_paused;
+      if (this.aiPaused) this.notice(this.t("paused"));
+      else if (h.status === "handoff") this.notice(this.t("handoff"));
       this.scroll(true);
+      this.syncPolling();
     } catch (e) {
       // expired or unknown conversation: start fresh
       this.convId = this.token = null;
@@ -689,9 +713,14 @@ textarea::placeholder{color:#9a9aa8}
           if (frame) { cancelAnimationFrame(frame); frame = 0; }
           if (!b.text.trim()) { b.node.remove(); self.items.splice(self.items.indexOf(b), 1); }
           else self.renderItem(b);
-          if (d.conversation_status === "handoff" && self.status !== "handoff") self.notice(self.t("handoff"));
+          if (d.message_id) self.seen[d.message_id] = 1;
+          if (d.ai_paused) {
+            if (!self.aiPaused) self.notice(self.t("paused"));
+            self.aiPaused = true;
+          } else if (d.conversation_status === "handoff" && self.status !== "handoff") self.notice(self.t("handoff"));
           self.status = d.conversation_status || self.status;
           self.scroll(true);
+          self.syncPolling();
         },
         error: function (d) {
           running = {};
@@ -726,6 +755,9 @@ textarea::placeholder{color:#9a9aa8}
     this.convId = this.token = null;
     this.status = "open";
     this.items = [];
+    this.seen = {};
+    this.aiPaused = false;
+    this.syncPolling();
     this.persist();
     this.showWelcome();
     this.input.focus();
@@ -744,6 +776,9 @@ textarea::placeholder{color:#9a9aa8}
     this.rb.classList.add("is-open");
     this.launcher.setAttribute("aria-expanded", "true");
     this.launcher.setAttribute("aria-label", this.t("close"));
+    this.unread = 0;
+    this.updateBadge();
+    if (this.pollTimer) { clearTimeout(this.pollTimer); this.pollTimer = null; this.schedulePoll(); }
     this.restore();
     var input = this.input;
     if (!this.inline) setTimeout(function () { input.focus({ preventScroll: true }); }, 250);
@@ -758,6 +793,58 @@ textarea::placeholder{color:#9a9aa8}
     if (!this.inline) this.launcher.focus({ preventScroll: true });
   };
   Widget.prototype.toggle = function () { this.isOpen ? this.close() : this.open(); };
+
+  // ---- live team replies: a team member can take over at any moment, so while a conversation
+  // exists the widget checks for new messages: every 4 s once a person is handling it, every 8 s
+  // while the AI is, every 30 s while the chat is closed, and every minute in a background tab.
+  Widget.prototype.syncPolling = function () {
+    var want = !!(this.convId && this.backend.history);
+    if (!want) {
+      if (this.pollTimer) { clearTimeout(this.pollTimer); this.pollTimer = null; }
+      return;
+    }
+    if (!this.pollTimer) this.schedulePoll();
+  };
+  Widget.prototype.schedulePoll = function () {
+    var self = this;
+    var human = this.aiPaused || this.status === "handoff";
+    var delay = document.visibilityState === "hidden" ? 60000 : !this.isOpen ? (human ? 15000 : 30000) : human ? 4000 : 8000;
+    this.pollTimer = setTimeout(function () { self.poll(); }, delay);
+  };
+  Widget.prototype.poll = async function () {
+    this.pollTimer = null;
+    if (!this.convId) return;
+    if (!this.sending) {
+      try {
+        this.applyUpdates(await this.backend.history({ conversation_id: this.convId, conversation_token: this.token }));
+      } catch (e) {
+        if (e && (e.status === 403 || e.status === 404)) return; // conversation gone: stop checking
+      }
+    }
+    if (this.convId) this.schedulePoll();
+  };
+  Widget.prototype.applyUpdates = function (h) {
+    var self = this, added = 0;
+    (h.messages || []).forEach(function (m) {
+      if (!m.id || self.seen[m.id]) return;
+      self.seen[m.id] = 1;
+      if (m.role === "user") return; // the visitor's own messages are already on screen
+      self.addBubble(m.role === "staff" ? "staff" : "bot", m.content, m.cited, false, m.author);
+      added++;
+    });
+    var tookOver = !this.aiPaused && !!h.ai_paused;
+    this.aiPaused = !!h.ai_paused;
+    this.status = h.status || this.status;
+    if (tookOver && !added) this.notice(this.t("paused"));
+    if (added && !this.isOpen) {
+      this.unread += added;
+      this.updateBadge();
+    }
+  };
+  Widget.prototype.updateBadge = function () {
+    this.badge.textContent = this.unread > 9 ? "9+" : String(this.unread);
+    this.badge.classList.toggle("show", this.unread > 0);
+  };
 
   Widget.prototype.showTeaser = function () {
     if (this.isOpen || this.items.length) return;
@@ -837,6 +924,7 @@ textarea::placeholder{color:#9a9aa8}
     var w = (instance = new Widget({ backend: backend, storageKey: "rehber:" + key.slice(0, 11), lang: script.getAttribute("data-lang") }));
     document.body.appendChild(w.host);
     w.applyConfig(cfg);
+    if (w.convId) w.restore(); // a returning visitor: show their chat and any team replies
     queued.forEach(function (q) { w[q[0]](q[1]); });
     queued = [];
     if (script.getAttribute("data-open") === "true") w.open();

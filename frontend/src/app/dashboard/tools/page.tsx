@@ -251,7 +251,7 @@ export default function ToolsPage() {
                         <p className="truncate text-sm font-medium">{h.handoff_reason ?? h.title}</p>
                         <p className="text-xs text-muted">{h.customer_contact ?? "no contact given"} · {h.handoff_at ? new Date(h.handoff_at).toLocaleString() : ""}</p>
                       </div>
-                      <Link href={`/dashboard/chat?c=${h.id}`} className="grid h-9 w-9 place-items-center rounded-lg text-muted hover:bg-white/10 hover:text-foreground" title="Open conversation">
+                      <Link href={`/dashboard/conversations?c=${h.id}`} className="grid h-9 w-9 place-items-center rounded-lg text-muted hover:bg-white/10 hover:text-foreground" title="Open conversation">
                         <MessageSquareShare size={16} />
                       </Link>
                       <button onClick={() => act(() => toolsApi.resolve(current.id, h.id))} className="inline-flex items-center gap-1 rounded-lg bg-violet/40 px-3 py-1.5 text-xs font-medium hover:bg-violet/60">

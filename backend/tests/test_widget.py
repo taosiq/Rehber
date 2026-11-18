@@ -93,7 +93,7 @@ async def test_public_events_hide_internal_details(client, fake_llm):
     meta = events[0][1]
     assert set(meta) == {"conversation_id", "language", "conversation_token"}  # no retrieved passages
     done = events[-1][1]
-    assert set(done) == {"message_id", "conversation_status", "cited"}  # no model/tokens/latency
+    assert set(done) == {"message_id", "conversation_status", "ai_paused", "cited"}  # no model/tokens/latency
     assert done["cited"] == [{"n": 1, "title": "Opening hours", "page": None, "url": None}]
     raw = (await widget_chat(key, "Are you open on Saturday?")).text
     assert "Closed on Sunday" not in raw and "score" not in raw and "fake-model" not in raw

@@ -306,7 +306,7 @@ function Slowest({ a }: { a: Analytics }) {
               <span className="text-xs text-muted">{new Date(s.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })} · first word {fmtMs(s.first_token_ms)}</span>
             </span>
             <span className="flex shrink-0 gap-2">
-              <Link href={`/dashboard/chat?c=${s.conversation_id}`} className="rounded-lg px-2.5 py-1.5 text-sm text-muted hover:bg-white/5 hover:text-foreground">Open</Link>
+              <Link href={`/dashboard/conversations?c=${s.conversation_id}`} className="rounded-lg px-2.5 py-1.5 text-sm text-muted hover:bg-white/5 hover:text-foreground">Open</Link>
               {s.trace_url && <a href={s.trace_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm text-accent hover:bg-accent/10">Trace <ExternalLink size={12} /></a>}
             </span>
           </li>

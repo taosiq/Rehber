@@ -69,6 +69,22 @@ One line on any website (WordPress, Shopify, Wix, plain HTML):
 - **Dashboard → Website Widget:** brand color, title, position, greeting per language, a live preview that answers with the real agent, one-click key creation with the embed code, and a sample website for testing.
 - **Privacy:** visitors get a reduced event stream, with no uncited passages, relevance scores, tool arguments or results, model name or token counts. Messages are built with DOM APIs, never `innerHTML`, and links are limited to http(s).
 
+## Dashboard
+
+| Page | What it does |
+|---|---|
+| **Overview** | Greeting, today's numbers, "needs a human" alert, a setup checklist (knowledge, tools, testing, widget key, first visitor, team, tracing), latest conversations, upcoming appointments, last 7 days |
+| **Conversations** | Team inbox for every channel: search, filters (needs human, unread, AI handling, resolved), unread markers, live updates. **Take over** pauses the AI; replying as a person takes over automatically; **Hand back to AI** and **Resolve**. If a resolved customer writes again, the conversation reopens and the AI answers |
+| **Knowledge · Chat Playground · Agent Tools · Website Widget · Analytics** | Phases 2–7 |
+| **Team** | Members and roles (owner / admin / member), invite links, pending invitations, leave or remove |
+| **Settings** | Business name and default language, delete business (owner, type the name to confirm), profile, change password, logged-in devices, API keys |
+
+The navigation has live inbox badges and a slide-in menu on phones.
+
+**Live hand-over in the website chat:** a team member's reply appears in the visitor's widget within seconds, labelled with their **first name only**. While a person is handling the chat, the AI stays silent: the visitor's messages are saved for the team and not answered by the model. The widget checks for replies adaptively (4 s when a person is handling it, 8 s otherwise, 30 s while closed, 60 s in a background tab) and shows an unread badge on the chat button. Contact details a customer types (email or phone) are picked up for the inbox.
+
+**Team security:** invite links are 256-bit random, stored only as SHA-256, valid for 7 days, single-use, and accepted only by the account with the invited email. Admins can't touch owners, and the last owner can't be removed or demoted. Changing your password signs out every other device.
+
 ## Quality, cost and speed
 
 **Evaluation set** (`backend/evals/dataset.json`): 17 cases on a fictional dental clinic in all 8 languages. They cover grounded answers with citations, prices that must not be invented, out-of-scope questions, prompt injection, availability, two-step booking (with and without confirmation), order lookup with right and wrong contact details, and human hand-off. The checks are deterministic: language of the reply, required/forbidden content, no invented prices, sources cited, tools called, booking actually created, conversation status. Numbers are normalized across scripts (Arabic/Persian digits, `1.500` / `1,500`). An optional LLM judge (`--judge`) grades rubric cases.
@@ -101,7 +117,7 @@ The first run found real problems that are now fixed and covered by tests: Frenc
 
 Automated: `tests/test_security.py` attacks every route without credentials and as another user, plus CSRF, roles, rate limits, key misuse, CORS and headers.
 
-**Known gaps (planned):** email verification and password reset need an email provider (Phase 9); team invitations UI (Phase 8).
+**Known gaps (planned):** email verification, password reset and invitation emails need an email provider (Phase 9). Until then invite links are shared by hand.
 
 ## Layout
 
@@ -136,7 +152,7 @@ uvicorn app.main:app --reload        # API docs: http://localhost:8000/docs
 
 # 3. Frontend
 cd frontend
-npm run dev                          # http://localhost:3000/dashboard  (Knowledge, Chat Playground, Agent Tools, Website Widget, Analytics, Settings)
+npm run dev                          # http://localhost:3000/dashboard  (Overview, Conversations, Knowledge, Chat Playground, Agent Tools, Website Widget, Analytics, Team, Settings)
 ```
 
 Tests (one-time setup: `docker exec rehber-db-1 createdb -U rehber rehber_test`):
@@ -151,6 +167,6 @@ Tests (one-time setup: `docker exec rehber-db-1 createdb -U rehber rehber_test`)
 - [x] 5. Security: accounts (Argon2id), HttpOnly sessions + CSRF, per-business roles, rate limits, widget/server API keys, signed widget conversations
 - [x] 6. Embeddable chat widget + 8 languages (TR, EN, DE, RU, FR, AR, FA, UR; incl. RTL), live preview, sample site
 - [x] 7. Evaluation set (17 cases, 8 languages), Langfuse tracing with PII masking, cost/speed/reliability analytics per business
-- [ ] 8. Full admin dashboard
+- [x] 8. Full dashboard: overview, team inbox with live human take-over in the widget, team & invitations, business/account settings, mobile navigation
 - [ ] 9. CI (GitHub Actions) and deploy online
 - [ ] 10. WhatsApp channel

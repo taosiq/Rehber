@@ -149,3 +149,68 @@ async def logout(response: Response, current: CurrentUser = Depends(get_current_
 @router.get("/me", response_model=MeOut)
 async def me(current: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     return await _me(db, current.user, current.session)
+
+
+
+# ---------------------------------------------------------------- account
+
+
+class ProfileIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+
+
+class PasswordIn(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=10, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def _strong_enough(cls, v: str) -> str:
+        if len(set(v)) < 5:
+            raise ValueError("Password is too simple. Use at least 10 characters with some variety.")
+        return v
+
+
+class SessionOut(BaseModel):
+    id: str
+    created_at: datetime
+    last_seen_at: datetime | None
+    ip: str | None
+    user_agent: str | None
+    current: bool
+
+
+@router.patch("/me", response_model=MeOut)
+async def update_profile(body: ProfileIn, current: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    current.user.name = body.name.strip()
+    await db.commit()
+    return await _me(db, current.user, current.session)
+
+
+@router.post("/password", status_code=204)
+async def change_password(body: PasswordIn, current: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Needs the current password. Signs out every other browser (this one stays logged in)."""
+    await ratelimit.enforce(f"password:{current.user.id}", 8, 900, "Too many attempts. Wait 15 minutes.")
+    ok, _ = verify_password(body.current_password, current.user.password_hash)
+    if not ok:
+        raise HTTPException(400, "Your current password is not correct.")
+    if body.new_password == body.current_password:
+        raise HTTPException(400, "Choose a password different from the current one.")
+    current.user.password_hash = hash_password(body.new_password)
+    await db.execute(delete(AuthSession).where(AuthSession.user_id == current.user.id, AuthSession.id != current.session.id))
+    await db.commit()
+
+
+@router.get("/sessions", response_model=list[SessionOut])
+async def list_sessions(current: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    now = datetime.now(timezone.utc)
+    rows = (await db.scalars(select(AuthSession).where(AuthSession.user_id == current.user.id, AuthSession.expires_at > now)
+                             .order_by(AuthSession.last_seen_at.desc().nulls_last()))).all()
+    return [SessionOut(id=str(s.id), created_at=s.created_at, last_seen_at=s.last_seen_at, ip=s.ip,
+                       user_agent=s.user_agent, current=s.id == current.session.id) for s in rows]
+
+
+@router.post("/sessions/revoke-others", status_code=204)
+async def revoke_other_sessions(current: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await db.execute(delete(AuthSession).where(AuthSession.user_id == current.user.id, AuthSession.id != current.session.id))
+    await db.commit()

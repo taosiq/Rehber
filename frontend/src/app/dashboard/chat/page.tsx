@@ -147,6 +147,7 @@ export default function ChatPlayground() {
       stored.map((m) => ({
         key: m.id,
         role: m.role,
+        author: m.author_name,
         content: m.content,
         language: m.language,
         sources: m.sources ?? [],

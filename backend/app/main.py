@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy import update
 
-from app.api import analytics, auth, business, chat, documents, health, keys, public, search, tenants
+from app.api import analytics, auth, business, chat, documents, health, keys, overview, public, search, team, tenants
 from app.core.config import get_settings
 from app.core.middleware import SecurityHeaders, SplitCORS
 from app.db.session import SessionLocal
@@ -57,5 +57,5 @@ app.add_middleware(SecurityHeaders)
 app.add_middleware(SplitCORS, dashboard_origins=settings.cors_origins)
 
 for r in (health.router, auth.router, tenants.router, documents.router, search.router, chat.router,
-          business.router, keys.router, public.router, analytics.router):
+          business.router, keys.router, public.router, analytics.router, team.router, overview.router):
     app.include_router(r, prefix="/api")

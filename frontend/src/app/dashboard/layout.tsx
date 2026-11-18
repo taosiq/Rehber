@@ -16,7 +16,7 @@ export default function DashboardLayout({ children }: LayoutProps<"/dashboard">)
           <div className="aurora-blob pointer-events-none fixed -z-10 right-[-10%] top-[-15%] h-[600px] w-[600px] bg-violet/60" />
           <div className="aurora-blob pointer-events-none fixed -z-10 bottom-[-20%] left-[20%] h-[500px] w-[500px] bg-accent/30 [animation-delay:-8s]" />
           <Sidebar />
-          <main className="min-w-0 flex-1">{children}</main>
+          <main className="min-w-0 flex-1 pt-16 lg:pt-0">{children}</main>
         </div>
       </TenantProvider>
     </AuthGate>

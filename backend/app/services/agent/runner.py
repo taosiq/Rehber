@@ -24,6 +24,7 @@ from app.services.agent.tools import ToolContext, build_tools
 from app.services.business import load_settings
 from app.services.language import detect_language
 from app.services import tracing
+from app.services.tracing import EMAIL, PHONE
 from app.services.pricing import estimate_cost
 from app.services.search import search_chunks
 
@@ -40,6 +41,12 @@ def _text_of(content) -> str:
     if isinstance(content, list):  # some providers return content blocks
         return "".join(p.get("text", "") for p in content if isinstance(p, dict))
     return ""
+
+
+def find_contact(text: str) -> str | None:
+    """An email address or phone number the customer wrote, if any."""
+    m = EMAIL.search(text) or PHONE.search(text)
+    return m.group(0).strip()[:200] if m else None
 
 
 def _retrieval_query(history: list[Message], question: str) -> str:
@@ -106,7 +113,22 @@ async def run_turn(
     language = detect_language(question, fallback=prev_lang or language_hint)
     user_msg = Message(tenant_id=tenant.id, conversation_id=convo.id, role="user", content=question, language=language)
     db.add(user_msg)
+    convo.last_message_at = datetime.now(ZoneInfo("UTC"))
+    if convo.status == "resolved":
+        convo.status = "open"  # the customer came back: it needs attention again
+    if not convo.customer_contact:
+        convo.customer_contact = find_contact(question)  # so the team knows who they're talking to
     await db.commit()
+
+    if convo.ai_paused:
+        # A team member has taken over: save the message for them, the agent stays silent.
+        yield _ev("meta", {"conversation_id": str(convo.id), "language": language, "sources": []})
+        yield _ev("done", {
+            "message_id": None, "conversation_id": str(convo.id), "conversation_status": convo.status,
+            "ai_paused": True, "cited": [], "tool_calls": [], "model": None, "prompt_tokens": 0,
+            "completion_tokens": 0, "latency_ms": 0, "first_token_ms": None, "cost_usd": None, "trace_id": None,
+        })
+        return
 
     # --- retrieval up front (fast, deterministic); the agent can search again via a tool ---
     registry = SourceRegistry()
@@ -203,11 +225,13 @@ async def run_turn(
         cost_usd=estimate_cost(str(model_name), prompt_tokens, completion_tokens), trace_id=trace_id,
     )
     db.add(msg)
+    convo.last_message_at = datetime.now(ZoneInfo("UTC"))
     await db.commit()
     await db.refresh(convo)
 
     yield _ev("done", {
         "message_id": str(msg.id), "conversation_id": str(convo.id), "conversation_status": convo.status,
+        "ai_paused": convo.ai_paused,
         "cited": cited, "tool_calls": calls, "model": str(model_name),
         "prompt_tokens": prompt_tokens, "completion_tokens": completion_tokens,
         "latency_ms": latency_ms, "first_token_ms": first_token_ms,
