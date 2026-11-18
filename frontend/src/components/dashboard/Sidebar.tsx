@@ -3,14 +3,16 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { BarChart3, Check, ChevronsUpDown, FileText, LayoutGrid, MessagesSquare, Plus, Settings } from "lucide-react";
+import { BarChart3, Bot, Check, ChevronsUpDown, FileText, LayoutGrid, MessagesSquare, Plus, Settings } from "lucide-react";
 import { Logo } from "@/components/landing/Logo";
 import { useTenant } from "./TenantContext";
 
-const nav = [
+const nav: { label: string; icon: typeof FileText; href?: string; soon?: boolean }[] = [
   { label: "Overview", icon: LayoutGrid, soon: true },
-  { label: "Knowledge", icon: FileText, active: true },
+  { label: "Knowledge", icon: FileText, href: "/dashboard" },
+  { label: "Chat Playground", icon: Bot, href: "/dashboard/chat" },
   { label: "Conversations", icon: MessagesSquare, soon: true },
   { label: "Analytics", icon: BarChart3, soon: true },
   { label: "Settings", icon: Settings, soon: true },
@@ -83,35 +85,39 @@ function TenantSwitcher() {
 }
 
 export function Sidebar() {
+  const pathname = usePathname();
   return (
     <aside className="sticky top-0 hidden h-screen w-[290px] shrink-0 flex-col border-r border-line bg-black/20 px-5 py-7 backdrop-blur-xl lg:flex">
       <Link href="/" className="mb-8 px-2"><Logo size={40} /></Link>
       <TenantSwitcher />
       <nav className="mt-8 flex flex-col gap-1">
-        {nav.map((item, i) => (
-          <motion.div
-            key={item.label}
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.05 * i }}
-            className={clsx(
-              "relative flex items-center gap-3 rounded-xl px-4 py-3 text-base",
-              item.active ? "text-foreground" : "text-muted",
-              item.soon && "cursor-not-allowed opacity-60",
-            )}
-          >
-            {item.active && (
-              <motion.span layoutId="nav-active" className="absolute inset-0 rounded-xl border border-line bg-white/[0.06]" />
-            )}
-            <item.icon size={19} className={clsx("relative", item.active && "text-accent")} />
-            <span className="relative">{item.label}</span>
-            {item.soon && <span className="relative ml-auto rounded-md bg-white/5 px-1.5 py-0.5 text-[10px] uppercase tracking-wider">Soon</span>}
-          </motion.div>
-        ))}
+        {nav.map((item, i) => {
+          const active = item.href === pathname;
+          const inner = (
+            <>
+              {active && (
+                <motion.span layoutId="nav-active" className="absolute inset-0 rounded-xl border border-line bg-white/[0.06]" transition={{ type: "spring", stiffness: 400, damping: 34 }} />
+              )}
+              <item.icon size={19} className={clsx("relative", active && "text-accent")} />
+              <span className="relative">{item.label}</span>
+              {item.soon && <span className="relative ml-auto rounded-md bg-white/5 px-1.5 py-0.5 text-[10px] uppercase tracking-wider">Soon</span>}
+            </>
+          );
+          const cls = clsx(
+            "relative flex items-center gap-3 rounded-xl px-4 py-3 text-base transition-colors",
+            active ? "text-foreground" : "text-muted",
+            item.soon ? "cursor-not-allowed opacity-60" : "hover:text-foreground",
+          );
+          return (
+            <motion.div key={item.label} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 * i }}>
+              {item.href ? <Link href={item.href} className={cls}>{inner}</Link> : <div className={cls}>{inner}</div>}
+            </motion.div>
+          );
+        })}
       </nav>
       <div className="mt-auto rounded-2xl border border-line bg-gradient-to-br from-violet/15 to-accent/10 p-4 text-sm text-muted">
-        <p className="font-medium text-foreground">Phase 2 · Knowledge</p>
-        <p className="mt-1">Upload docs and test retrieval. Chat comes in Phase 3.</p>
+        <p className="font-medium text-foreground">Phase 3 · Chat</p>
+        <p className="mt-1">Streaming answers with citations, in 8 languages. Tools come in Phase 4.</p>
       </div>
     </aside>
   );

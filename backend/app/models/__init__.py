@@ -76,3 +76,39 @@ class Chunk(Base):
             postgresql_ops={"embedding": "vector_cosine_ops"},
         ),
     )
+
+
+class Conversation(TimestampMixin, Base):
+    """One chat session between a customer and a business's agent."""
+
+    __tablename__ = "conversations"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
+    channel: Mapped[str] = mapped_column(String(20), default="playground")  # playground|widget|whatsapp
+    title: Mapped[str | None] = mapped_column(String(200))
+
+    messages: Mapped[list["Message"]] = relationship(
+        back_populates="conversation", cascade="all, delete-orphan", order_by="Message.created_at"
+    )
+
+
+class Message(TimestampMixin, Base):
+    """A user or assistant message. Assistant rows also record sources, cost and speed."""
+
+    __tablename__ = "messages"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("conversations.id", ondelete="CASCADE"), index=True
+    )
+    role: Mapped[str] = mapped_column(String(20))  # user | assistant
+    content: Mapped[str] = mapped_column(Text)
+    language: Mapped[str | None] = mapped_column(String(5))  # detected, e.g. "tr"
+    sources: Mapped[list | None] = mapped_column(JSON)  # cited passages
+    model: Mapped[str | None] = mapped_column(String(100))
+    prompt_tokens: Mapped[int | None] = mapped_column(Integer)
+    completion_tokens: Mapped[int | None] = mapped_column(Integer)
+    latency_ms: Mapped[int | None] = mapped_column(Integer)  # total time to full answer
+    first_token_ms: Mapped[int | None] = mapped_column(Integer)  # time to first streamed word
+
+    conversation: Mapped[Conversation] = relationship(back_populates="messages")

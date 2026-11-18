@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import update
 
-from app.api import documents, health, search, tenants
+from app.api import chat, documents, health, search, tenants
 from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.models import Document
@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Rehber API", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="Rehber API", version="0.3.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -48,5 +48,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for r in (health.router, tenants.router, documents.router, search.router):
+for r in (health.router, tenants.router, documents.router, search.router, chat.router):
     app.include_router(r, prefix="/api")

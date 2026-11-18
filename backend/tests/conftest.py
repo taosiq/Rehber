@@ -17,6 +17,7 @@ from app.core.config import get_settings  # noqa: E402
 from app.db.session import Base, engine  # noqa: E402
 from app.main import app  # noqa: E402
 from app.services.embeddings import set_embedder  # noqa: E402
+from app.services.llm import LLMError, StreamResult, Usage, set_llm  # noqa: E402
 
 
 class FakeEmbedder:
@@ -37,6 +38,34 @@ class FakeEmbedder:
 
     async def embed_query(self, text_):
         return self._vec(text_)
+
+
+class FakeLLM:
+    """Streams a scripted reply and records what it was asked."""
+
+    model = "fake-model"
+
+    def __init__(self):
+        self.reply = "Yes, we are open on Saturday [1]."
+        self.fail = False
+        self.calls: list[list[dict]] = []
+
+    async def stream(self, messages, result: StreamResult):
+        self.calls.append(messages)
+        if self.fail:
+            raise LLMError("The free AI quota is used up for now.")
+        result.model = self.model
+        for word in self.reply.split(" "):
+            yield word + " "
+        result.usage = Usage(prompt_tokens=100, completion_tokens=20)
+
+
+@pytest.fixture
+def fake_llm():
+    llm = FakeLLM()
+    set_llm(llm)
+    yield llm
+    set_llm(None)
 
 
 @pytest_asyncio.fixture(autouse=True)
