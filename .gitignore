@@ -22,3 +22,6 @@ Thumbs.db
 
 # Uploaded files
 backend/storage/
+
+# Evaluation runs (latest.json / latest.md are kept)
+backend/evals/reports/eval-*.json

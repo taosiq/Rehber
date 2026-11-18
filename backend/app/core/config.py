@@ -24,6 +24,21 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     anthropic_api_key: str = ""
 
+    # List prices in USD per 1M tokens (input, output), used for cost estimates. The free tier costs
+    # nothing, but the dashboard shows what the same traffic would cost on a paid plan.
+    model_prices: dict[str, tuple[float, float]] = {
+        "openai/gpt-oss-120b": (0.15, 0.60),
+        "openai/gpt-oss-20b": (0.075, 0.30),
+        "llama-3.3-70b-versatile": (0.59, 0.79),
+        "llama-3.1-8b-instant": (0.05, 0.08),
+    }
+
+    # Langfuse tracing (optional). On when both keys are set.
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_base_url: str = "https://cloud.langfuse.com"  # EU region; US: https://us.cloud.langfuse.com
+    langfuse_mask_pii: bool = True  # replace emails and phone numbers before they leave the server
+
     # RAG answering
     retrieval_k: int = 4  # passages given to the model (kept small: free tier has a tokens/minute cap)
     min_relevance: float = 0.2  # drop passages below this cosine similarity

@@ -17,7 +17,7 @@ const nav: { label: string; icon: typeof FileText; href?: string; soon?: boolean
   { label: "Agent Tools", icon: Wrench, href: "/dashboard/tools" },
   { label: "Website Widget", icon: MessageCircleMore, href: "/dashboard/widget" },
   { label: "Conversations", icon: MessagesSquare, soon: true },
-  { label: "Analytics", icon: BarChart3, soon: true },
+  { label: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
   { label: "Settings", icon: Settings, href: "/dashboard/settings" },
 ];
 

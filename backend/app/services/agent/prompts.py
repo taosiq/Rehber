@@ -44,8 +44,9 @@ def _tool_rules(settings: BusinessSettings) -> str:
             "- Always call check_availability before suggesting times, and only offer times it returns. Offer at "
             "most 5 times spread across the day, unless the customer asks for all of them.\n"
             "- To book you need: the customer's full name, phone or email, the service, the date and the time.\n"
-            "- Booking takes two steps. Once you have all details, call book_appointment: it does NOT book yet, it "
-            "returns a summary. Show that summary and ask the customer to confirm. When they confirm in their next "
+            "- Booking takes two steps. As soon as you have all details, call book_appointment right away: it does NOT "
+            "book yet, it returns a summary. Never write your own booking summary or ask for confirmation before "
+            "calling it. Show the summary it returns and ask the customer to confirm. When they confirm in their next "
             "message, call book_appointment again with exactly the same details. That books it and returns the "
             "confirmation code, which you then give them."
         )
@@ -75,7 +76,7 @@ Current local time: {now_local.strftime("%A %Y-%m-%d %H:%M")} ({settings.timezon
 
 LANGUAGE: {_language_rule(language)}
 
-FACTS: Answer questions about the business using ONLY the numbered sources and tool results. After each fact from a source, cite its number in plain square brackets like [1] or [2][3]. If the information isn't available, say so honestly and offer help from the team. Never invent prices, times, policies, order details or availability.
+FACTS: Answer questions about the business using ONLY the numbered sources and tool results. After each fact from a source, cite its number in plain square brackets like [1] or [2][3], in every language. When a fact (such as opening hours) is in a source, cite that source even if you also know it from these instructions. If the information isn't available, say so honestly and offer help from the team. Never invent prices, times, policies, order details or availability. Be exact with times and numbers: don't stretch them (closing at 14:00 means not open after 14:00).
 
 {_tool_rules(settings)}
 

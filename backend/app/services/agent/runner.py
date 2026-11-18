@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.models import Conversation, Message, Tenant
+from app.models import AgentError, Conversation, Message, Tenant
 from app.services.agent.graph import MAX_STEPS, build_agent
 from app.services.agent.model import ModelConfigError, get_chat_model
 from app.services.agent.prompts import build_system_prompt
@@ -23,6 +23,8 @@ from app.services.agent.sources import SourceRegistry
 from app.services.agent.tools import ToolContext, build_tools
 from app.services.business import load_settings
 from app.services.language import detect_language
+from app.services import tracing
+from app.services.pricing import estimate_cost
 from app.services.search import search_chunks
 
 log = logging.getLogger(__name__)
@@ -46,13 +48,24 @@ def _retrieval_query(history: list[Message], question: str) -> str:
     return f"{prev_user}\n{question}" if prev_user and len(question) < 80 else question
 
 
-def _friendly_error(exc: Exception) -> str:
+def _error_kind(exc: Exception) -> str:
     name = type(exc).__name__
     if "RateLimit" in name:
-        return "The free AI quota is used up for now. Please try again in a minute."
+        return "rate_limit"
     if "Connection" in name or "Timeout" in name:
-        return "Could not reach the AI provider. Check your internet connection."
+        return "connection"
     if isinstance(exc, ModelConfigError):
+        return "config"
+    return "other"
+
+
+def _friendly_error(exc: Exception) -> str:
+    kind = _error_kind(exc)
+    if kind == "rate_limit":
+        return "The free AI quota is used up for now. Please try again in a minute."
+    if kind == "connection":
+        return "Could not reach the AI provider. Check your internet connection."
+    if kind == "config":
         return str(exc)
     return "Sorry, something went wrong while answering. Please try again."
 
@@ -117,13 +130,19 @@ async def run_turn(
     last_step = None
     model_name = cfg.chat_model
 
+    trace_cfg, trace_id = tracing.turn_config(
+        seed=str(user_msg.id), tenant_id=str(tenant.id), tenant_name=tenant.name,
+        conversation_id=str(convo.id), channel=convo.channel, language=language,
+    )
+    run_config = {"recursion_limit": MAX_STEPS} | trace_cfg
+
     try:
         model = get_chat_model()
         model_name = getattr(model, "model_name", None) or getattr(model, "model", None) or model_name
         agent = build_agent(model, build_tools(ctx))
         stream = agent.astream(
             {"messages": messages},
-            config={"recursion_limit": MAX_STEPS},
+            config=run_config,
             stream_mode=["messages", "updates"],
         )
         async for mode, payload in stream:
@@ -166,6 +185,9 @@ async def run_turn(
                         yield _ev("tool", rec)
     except Exception as exc:  # provider errors, recursion limit, etc.
         log.exception("Agent turn failed")
+        db.add(AgentError(tenant_id=tenant.id, conversation_id=convo.id, kind=_error_kind(exc),
+                          detail=f"{type(exc).__name__}: {exc}"[:500]))
+        await db.commit()
         yield _ev("error", {"message": _friendly_error(exc)})
         return
 
@@ -178,6 +200,7 @@ async def run_turn(
         tenant_id=tenant.id, conversation_id=convo.id, role="assistant", content=answer, language=language,
         sources=cited, tool_calls=calls or None, model=str(model_name), prompt_tokens=prompt_tokens,
         completion_tokens=completion_tokens, latency_ms=latency_ms, first_token_ms=first_token_ms,
+        cost_usd=estimate_cost(str(model_name), prompt_tokens, completion_tokens), trace_id=trace_id,
     )
     db.add(msg)
     await db.commit()
@@ -188,4 +211,5 @@ async def run_turn(
         "cited": cited, "tool_calls": calls, "model": str(model_name),
         "prompt_tokens": prompt_tokens, "completion_tokens": completion_tokens,
         "latency_ms": latency_ms, "first_token_ms": first_token_ms,
+        "cost_usd": float(msg.cost_usd) if msg.cost_usd is not None else None, "trace_id": trace_id,
     })
