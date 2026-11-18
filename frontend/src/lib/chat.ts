@@ -22,10 +22,22 @@ export type ChatStats = {
   first_token_ms: number | null;
 };
 
+export type ToolCall = {
+  id: string;
+  name: string;
+  args: Record<string, unknown>;
+  status: "running" | "done" | "error";
+  result: Record<string, unknown> | null;
+};
+
 export type ConversationSummary = {
   id: string;
   title: string | null;
   channel: string;
+  status: "open" | "handoff" | "resolved";
+  handoff_reason: string | null;
+  handoff_at: string | null;
+  customer_contact: string | null;
   message_count: number;
   created_at: string;
 };
@@ -36,6 +48,7 @@ export type StoredMessage = {
   content: string;
   language: string | null;
   sources: ChatSource[] | null;
+  tool_calls: ToolCall[] | null;
   model: string | null;
   prompt_tokens: number | null;
   completion_tokens: number | null;
@@ -46,7 +59,16 @@ export type StoredMessage = {
 type Handlers = {
   onMeta?: (d: { conversation_id: string; language: string | null; sources: ChatSource[] }) => void;
   onToken?: (text: string) => void;
-  onDone?: (d: ChatStats & { message_id: string; conversation_id: string; cited: ChatSource[] }) => void;
+  onTool?: (call: ToolCall) => void;
+  onDone?: (
+    d: ChatStats & {
+      message_id: string;
+      conversation_id: string;
+      conversation_status: ConversationSummary["status"];
+      cited: ChatSource[];
+      tool_calls: ToolCall[];
+    },
+  ) => void;
   onError?: (message: string) => void;
 };
 
@@ -91,6 +113,7 @@ export async function streamChat(
         const parsed = JSON.parse(data);
         if (event === "meta") handlers.onMeta?.(parsed);
         else if (event === "token") handlers.onToken?.(parsed.text);
+        else if (event === "tool") handlers.onTool?.(parsed);
         else if (event === "done") handlers.onDone?.(parsed);
         else if (event === "error") handlers.onError?.(parsed.message);
       }

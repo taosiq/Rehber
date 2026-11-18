@@ -5,7 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { BarChart3, Bot, Check, ChevronsUpDown, FileText, LayoutGrid, MessagesSquare, Plus, Settings } from "lucide-react";
+import { BarChart3, Bot, Check, Wrench, ChevronsUpDown, FileText, LayoutGrid, MessagesSquare, Plus, Settings } from "lucide-react";
 import { Logo } from "@/components/landing/Logo";
 import { useTenant } from "./TenantContext";
 
@@ -13,6 +13,7 @@ const nav: { label: string; icon: typeof FileText; href?: string; soon?: boolean
   { label: "Overview", icon: LayoutGrid, soon: true },
   { label: "Knowledge", icon: FileText, href: "/dashboard" },
   { label: "Chat Playground", icon: Bot, href: "/dashboard/chat" },
+  { label: "Agent Tools", icon: Wrench, href: "/dashboard/tools" },
   { label: "Conversations", icon: MessagesSquare, soon: true },
   { label: "Analytics", icon: BarChart3, soon: true },
   { label: "Settings", icon: Settings, soon: true },
@@ -116,8 +117,8 @@ export function Sidebar() {
         })}
       </nav>
       <div className="mt-auto rounded-2xl border border-line bg-gradient-to-br from-violet/15 to-accent/10 p-4 text-sm text-muted">
-        <p className="font-medium text-foreground">Phase 3 · Chat</p>
-        <p className="mt-1">Streaming answers with citations, in 8 languages. Tools come in Phase 4.</p>
+        <p className="font-medium text-foreground">Phase 4 · Agent tools</p>
+        <p className="mt-1">Bookings, order lookup and human hand-off. Logins come in Phase 5.</p>
       </div>
     </aside>
   );

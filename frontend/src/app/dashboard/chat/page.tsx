@@ -3,17 +3,18 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { ArrowUp, MessageSquarePlus, MessagesSquare, Square, Sparkles } from "lucide-react";
+import { ArrowUp, CheckCircle2, MessageSquarePlus, MessagesSquare, Square, Sparkles, UserRound } from "lucide-react";
 import { useTenant } from "@/components/dashboard/TenantContext";
 import { MessageBubble, type UiMessage } from "@/components/dashboard/chat/MessageBubble";
+import { API_URL } from "@/lib/api";
 import { chatApi, isRtlText, streamChat, type ConversationSummary } from "@/lib/chat";
 
 const suggestions = [
-  { text: "Are you open on Saturday?", lang: "EN" },
+  { text: "Can I book a consultation this Friday?", lang: "EN" },
   { text: "Diş beyazlatma ne kadar?", lang: "TR" },
-  { text: "Gibt es einen Flughafentransfer?", lang: "DE" },
+  { text: "Wo ist meine Bestellung 48213? ayse@example.com", lang: "DE" },
   { text: "Как можно оплатить?", lang: "RU" },
-  { text: "هل الاستشارة مجانية؟", lang: "AR" },
+  { text: "أريد التحدث مع موظف", lang: "AR" },
   { text: "کیا آپ اتوار کو کھلے ہیں؟", lang: "UR" },
 ];
 
@@ -25,6 +26,7 @@ export default function ChatPlayground() {
   const tid = current?.id;
   const [messages, setMessages] = useState<UiMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [status, setStatus] = useState<ConversationSummary["status"]>("open");
   const [history, setHistory] = useState<ConversationSummary[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -49,8 +51,11 @@ export default function ChatPlayground() {
     };
   }, [tid]);
 
+  // Smooth-scroll while chatting; jump instantly when a past conversation is opened.
+  const instantScroll = useRef(false);
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    endRef.current?.scrollIntoView({ behavior: instantScroll.current ? "instant" : "smooth", block: "end" });
+    instantScroll.current = false;
   }, [messages]);
 
   // Deep link: /dashboard/chat?c=<conversation id>
@@ -93,7 +98,16 @@ export default function ChatPlayground() {
             });
           },
           onToken: (t) => patchLast((m) => ({ ...m, content: m.content + t })),
-          onDone: (d) =>
+          onTool: (call) =>
+            patchLast((m) => {
+              const tools = [...(m.tools ?? [])];
+              const i = tools.findIndex((t) => t.id === call.id);
+              if (i >= 0) tools[i] = call;
+              else tools.push(call);
+              return { ...m, tools };
+            }),
+          onDone: (d) => {
+            setStatus(d.conversation_status);
             patchLast((m) => ({
               ...m,
               streaming: false,
@@ -106,7 +120,8 @@ export default function ChatPlayground() {
                 latency_ms: d.latency_ms,
                 first_token_ms: d.first_token_ms,
               },
-            })),
+            }));
+          },
           onError: (msg) => patchLast((m) => ({ ...m, streaming: false, error: msg })),
         },
         ctrl.signal,
@@ -125,7 +140,9 @@ export default function ChatPlayground() {
   const openConversation = async (id: string) => {
     if (!tid || streaming) return;
     const stored = await chatApi.messages(tid, id);
+    instantScroll.current = true;
     setConversationId(id);
+    setStatus(history.find((c) => c.id === id)?.status ?? "open");
     setMessages(
       stored.map((m) => ({
         key: m.id,
@@ -133,6 +150,7 @@ export default function ChatPlayground() {
         content: m.content,
         language: m.language,
         sources: m.sources ?? [],
+        tools: m.tool_calls ?? undefined,
         stats:
           m.role === "assistant" && m.latency_ms != null
             ? {
@@ -151,6 +169,7 @@ export default function ChatPlayground() {
     abortRef.current?.abort();
     setMessages([]);
     setConversationId(null);
+    setStatus("open");
     inputRef.current?.focus();
   };
 
@@ -184,7 +203,8 @@ export default function ChatPlayground() {
                 )}
               >
                 <p dir={isRtlText(c.title ?? "") ? "rtl" : "ltr"} className="truncate text-sm">{c.title ?? "Untitled"}</p>
-                <p className="mt-0.5 text-[11px] text-muted">
+                <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted">
+                  {c.status === "handoff" && <span className="rounded bg-violet/30 px-1.5 text-[10px] text-violet-200">needs human</span>}
                   {c.message_count} messages · {new Date(c.created_at).toLocaleDateString()}
                 </p>
               </motion.button>
@@ -205,6 +225,32 @@ export default function ChatPlayground() {
             <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" /> Live · answers only from your Knowledge
           </span>
         </header>
+
+        <AnimatePresence>
+          {status === "handoff" && conversationId && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden border-b border-violet/30 bg-violet/10"
+            >
+              <div className="flex items-center gap-3 px-8 py-3 text-sm">
+                <UserRound size={16} className="text-violet-200" />
+                <span className="flex-1">This conversation was handed to your team. The customer is waiting for a human reply.</span>
+                <button
+                  onClick={async () => {
+                    await fetch(`${API_URL}/tenants/${tid}/conversations/${conversationId}/resolve`, { method: "POST" });
+                    setStatus("resolved");
+                    loadHistory();
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-violet/40 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-violet/60"
+                >
+                  <CheckCircle2 size={13} /> Mark resolved
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 py-8">

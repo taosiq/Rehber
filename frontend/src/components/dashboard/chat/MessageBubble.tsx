@@ -4,7 +4,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { Fragment, useState } from "react";
 import clsx from "clsx";
 import { Clock, FileText, Globe, Type, Zap } from "lucide-react";
-import { isRtlText, RTL_LANGS, type ChatSource, type ChatStats } from "@/lib/chat";
+import { isRtlText, RTL_LANGS, type ChatSource, type ChatStats, type ToolCall } from "@/lib/chat";
+import { ToolCard } from "./ToolCard";
 
 export type UiMessage = {
   key: string;
@@ -14,6 +15,7 @@ export type UiMessage = {
   sources?: ChatSource[]; // cited passages (after done)
   retrieved?: ChatSource[]; // all passages given to the model (while streaming)
   stats?: ChatStats;
+  tools?: ToolCall[];
   streaming?: boolean;
   error?: string;
 };
@@ -23,8 +25,67 @@ const LANG_LABEL: Record<string, string> = {
 };
 const sourceIcon = { pdf: FileText, url: Globe, text: Type } as Record<string, typeof FileText>;
 
+type CiteProps = { sources: ChatSource[]; onCite: (n: number) => void };
+
+/** Minimal, safe markdown for chat answers: paragraphs, "- " / "1." lists, **bold**,
+ *  plus clickable [n] citation chips. No HTML is ever injected. */
+function RichText({ text, ...cite }: { text: string } & CiteProps) {
+  const blocks: { type: "p" | "ul" | "ol"; lines: string[] }[] = [];
+  for (const raw of text.split("\n")) {
+    const line = raw.trimEnd();
+    const bullet = line.match(/^\s*[-*•]\s+(.*)$/);
+    const numbered = line.match(/^\s*\d+[.)]\s+(.*)$/);
+    const type = bullet ? "ul" : numbered ? "ol" : "p";
+    const content = bullet?.[1] ?? numbered?.[1] ?? line;
+    const last = blocks[blocks.length - 1];
+    if (!line.trim()) {
+      blocks.push({ type: "p", lines: [] }); // paragraph break
+    } else if (last && last.type === type && (type !== "p" || last.lines.length)) {
+      last.lines.push(content);
+    } else {
+      blocks.push({ type, lines: [content] });
+    }
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      {blocks.filter((b) => b.lines.length).map((b, i) =>
+        b.type === "p" ? (
+          <p key={i}>{b.lines.map((l, j) => <Fragment key={j}>{j > 0 && <br />}<Inline text={l} {...cite} /></Fragment>)}</p>
+        ) : (
+          <Fragment key={i}>
+            {b.type === "ul" ? (
+              <ul className="flex list-disc flex-col gap-1 ps-5 marker:text-accent">
+                {b.lines.map((l, j) => <li key={j}><Inline text={l} {...cite} /></li>)}
+              </ul>
+            ) : (
+              <ol className="flex list-decimal flex-col gap-1 ps-5 marker:text-accent">
+                {b.lines.map((l, j) => <li key={j}><Inline text={l} {...cite} /></li>)}
+              </ol>
+            )}
+          </Fragment>
+        ),
+      )}
+    </div>
+  );
+}
+
+function Inline({ text, ...cite }: { text: string } & CiteProps) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.startsWith("**") && p.endsWith("**") && p.length > 4 ? (
+          <strong key={i} className="font-semibold text-foreground"><WithCitations text={p.slice(2, -2)} {...cite} /></strong>
+        ) : (
+          <WithCitations key={i} text={p} {...cite} />
+        ),
+      )}
+    </>
+  );
+}
+
 /** Render "[1]" markers as small clickable citation chips. */
-function WithCitations({ text, sources, onCite }: { text: string; sources: ChatSource[]; onCite: (n: number) => void }) {
+function WithCitations({ text, sources, onCite }: { text: string } & CiteProps) {
   const known = new Set(sources.map((s) => s.n));
   const parts = text.split(/(\[\d+(?:\s*,\s*\d+)*\])/g);
   return (
@@ -80,17 +141,23 @@ export function MessageBubble({ msg }: { msg: UiMessage }) {
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 260, damping: 26 }} className="flex gap-3">
       <div className="mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent to-violet text-sm font-bold text-black">R</div>
       <div className="min-w-0 max-w-[82%] flex-1">
+        {msg.tools && msg.tools.length > 0 && (
+          <div className="mb-2.5 flex flex-col items-start gap-2 [&>*]:w-full [&>*]:max-w-md">
+            {msg.tools.map((t) => <ToolCard key={t.id} call={t} />)}
+          </div>
+        )}
+        {(msg.content || msg.error || !msg.tools?.length || msg.streaming) && (
         <div
           dir={rtl ? "rtl" : "ltr"}
           className={clsx(
-            "whitespace-pre-wrap rounded-3xl rounded-ss-md border px-5 py-3.5 text-base leading-relaxed",
+            "rounded-3xl rounded-ss-md border px-5 py-3.5 text-base leading-relaxed",
             msg.error ? "border-red-400/30 bg-red-400/10 text-red-200" : "border-line bg-white/[0.04]",
           )}
         >
           {msg.error ? (
             msg.error
           ) : msg.content ? (
-            <WithCitations text={msg.content} sources={sources} onCite={(n) => setOpen(open === n ? null : n)} />
+            <RichText text={msg.content} sources={sources} onCite={(n) => setOpen(open === n ? null : n)} />
           ) : (
             <span className="inline-flex gap-1 py-1">
               {[0, 1, 2].map((d) => (
@@ -100,6 +167,7 @@ export function MessageBubble({ msg }: { msg: UiMessage }) {
           )}
           {msg.streaming && msg.content && <span className="ms-0.5 inline-block h-4 w-[2px] translate-y-0.5 animate-pulse bg-accent" />}
         </div>
+        )}
 
         {/* Expanded source passage */}
         <AnimatePresence>

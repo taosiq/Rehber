@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
 
     # RAG answering
-    retrieval_k: int = 6  # passages given to the model
+    retrieval_k: int = 4  # passages given to the model (kept small: free tier has a tokens/minute cap)
     min_relevance: float = 0.2  # drop passages below this cosine similarity
     history_messages: int = 8  # previous messages sent for context
 
