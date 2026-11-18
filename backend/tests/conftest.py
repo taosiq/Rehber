@@ -1,6 +1,7 @@
 """Test setup: a separate `rehber_test` database and a fast fake embedder."""
 
 import hashlib
+import json
 import os
 import re
 
@@ -17,7 +18,10 @@ from app.core.config import get_settings  # noqa: E402
 from app.db.session import Base, engine  # noqa: E402
 from app.main import app  # noqa: E402
 from app.services.embeddings import set_embedder  # noqa: E402
-from app.services.llm import LLMError, StreamResult, Usage, set_llm  # noqa: E402
+from app.services.agent.model import set_chat_model  # noqa: E402
+from langchain_core.language_models import BaseChatModel  # noqa: E402
+from langchain_core.messages import AIMessage, AIMessageChunk  # noqa: E402
+from langchain_core.outputs import ChatGeneration, ChatGenerationChunk, ChatResult  # noqa: E402
 
 
 class FakeEmbedder:
@@ -40,32 +44,70 @@ class FakeEmbedder:
         return self._vec(text_)
 
 
-class FakeLLM:
-    """Streams a scripted reply and records what it was asked."""
+class RateLimitError(Exception):
+    """Stands in for the provider's rate-limit error."""
 
-    model = "fake-model"
 
-    def __init__(self):
-        self.reply = "Yes, we are open on Saturday [1]."
-        self.fail = False
-        self.calls: list[list[dict]] = []
+class FakeChatModel(BaseChatModel):
+    """A scripted LangChain chat model.
 
-    async def stream(self, messages, result: StreamResult):
-        self.calls.append(messages)
+    `script` is a list of turns; each turn is either a reply string or a list of
+    tool calls [(name, args), ...]. When the script runs out it repeats `reply`.
+    Every call's messages are recorded in `calls`.
+    """
+
+    model_name: str = "fake-model"
+    script: list = []
+    reply: str = "Yes, we are open on Saturday [1]."
+    fail: bool = False
+    calls: list = []
+    tools: list = []
+
+    @property
+    def _llm_type(self) -> str:
+        return "fake"
+
+    def bind_tools(self, tools, **kwargs):
+        self.tools = [t.name for t in tools]
+        return self
+
+    def _next(self, messages) -> AIMessage:
+        self.calls.append(list(messages))
         if self.fail:
-            raise LLMError("The free AI quota is used up for now.")
-        result.model = self.model
-        for word in self.reply.split(" "):
-            yield word + " "
-        result.usage = Usage(prompt_tokens=100, completion_tokens=20)
+            raise RateLimitError("quota")
+        turn = self.script.pop(0) if self.script else self.reply
+        usage = {"input_tokens": 100, "output_tokens": 20, "total_tokens": 120}
+        if isinstance(turn, list):
+            calls = [{"name": n, "args": a, "id": f"call_{len(self.calls)}_{i}", "type": "tool_call"}
+                     for i, (n, a) in enumerate(turn)]
+            return AIMessage(content="", tool_calls=calls, usage_metadata=usage)
+        return AIMessage(content=turn, usage_metadata=usage)
+
+    def _generate(self, messages, stop=None, run_manager=None, **kwargs):
+        return ChatResult(generations=[ChatGeneration(message=self._next(messages))])
+
+    async def _astream(self, messages, stop=None, run_manager=None, **kwargs):
+        msg = self._next(messages)
+        if msg.tool_calls:
+            chunks = [AIMessageChunk(content="", tool_call_chunks=[
+                {"name": tc["name"], "args": json.dumps(tc["args"]), "id": tc["id"], "index": i}
+                for i, tc in enumerate(msg.tool_calls)])]
+        else:
+            words = msg.content.split(" ")
+            chunks = [AIMessageChunk(content=w + ("" if i == len(words) - 1 else " ")) for i, w in enumerate(words)]
+        chunks[-1] = chunks[-1] + AIMessageChunk(content="", usage_metadata=msg.usage_metadata)
+        for c in chunks:
+            if run_manager and c.content:
+                await run_manager.on_llm_new_token(c.content, chunk=ChatGenerationChunk(message=c))
+            yield ChatGenerationChunk(message=c)
 
 
 @pytest.fixture
 def fake_llm():
-    llm = FakeLLM()
-    set_llm(llm)
+    llm = FakeChatModel(script=[], calls=[])
+    set_chat_model(llm)
     yield llm
-    set_llm(None)
+    set_chat_model(None)
 
 
 @pytest_asyncio.fixture(autouse=True)

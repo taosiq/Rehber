@@ -5,10 +5,24 @@ read another business's data. All queries filter on it.
 """
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Text, func
+from sqlalchemy import (
+    JSON,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.config import get_settings
@@ -86,6 +100,13 @@ class Conversation(TimestampMixin, Base):
     tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
     channel: Mapped[str] = mapped_column(String(20), default="playground")  # playground|widget|whatsapp
     title: Mapped[str | None] = mapped_column(String(200))
+    status: Mapped[str] = mapped_column(String(20), default="open")  # open | handoff | resolved
+    handoff_reason: Mapped[str | None] = mapped_column(Text)
+    handoff_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    customer_contact: Mapped[str | None] = mapped_column(String(200))
+    # An action proposed by the agent that waits for the customer's confirmation
+    # in their next message (e.g. a booking). Enforced in code, not just the prompt.
+    pending_action: Mapped[dict | None] = mapped_column(JSON)
 
     messages: Mapped[list["Message"]] = relationship(
         back_populates="conversation", cascade="all, delete-orphan", order_by="Message.created_at"
@@ -105,6 +126,7 @@ class Message(TimestampMixin, Base):
     content: Mapped[str] = mapped_column(Text)
     language: Mapped[str | None] = mapped_column(String(5))  # detected, e.g. "tr"
     sources: Mapped[list | None] = mapped_column(JSON)  # cited passages
+    tool_calls: Mapped[list | None] = mapped_column(JSON)  # [{name, args, status, result}]
     model: Mapped[str | None] = mapped_column(String(100))
     prompt_tokens: Mapped[int | None] = mapped_column(Integer)
     completion_tokens: Mapped[int | None] = mapped_column(Integer)
@@ -112,3 +134,51 @@ class Message(TimestampMixin, Base):
     first_token_ms: Mapped[int | None] = mapped_column(Integer)  # time to first streamed word
 
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
+
+
+class Appointment(TimestampMixin, Base):
+    """A booking made by the agent (or later, by staff)."""
+
+    __tablename__ = "appointments"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
+    conversation_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("conversations.id", ondelete="SET NULL"))
+    code: Mapped[str] = mapped_column(String(12))  # shown to the customer, e.g. "RB-7K2Q"
+    customer_name: Mapped[str] = mapped_column(String(200))
+    customer_contact: Mapped[str] = mapped_column(String(200))
+    service: Mapped[str] = mapped_column(String(200))
+    start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    end_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(20), default="confirmed")  # confirmed | cancelled
+    notes: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        # Database-level guard against double-booking the same start time.
+        Index(
+            "uq_appointments_slot",
+            "tenant_id",
+            "start_at",
+            unique=True,
+            postgresql_where=text("status = 'confirmed'"),
+        ),
+    )
+
+
+class Order(TimestampMixin, Base):
+    """A customer order, synced from the business's shop system (or demo data)."""
+
+    __tablename__ = "orders"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
+    order_number: Mapped[str] = mapped_column(String(50))
+    customer_email: Mapped[str | None] = mapped_column(String(200))
+    customer_phone: Mapped[str | None] = mapped_column(String(50))
+    status: Mapped[str] = mapped_column(String(20))  # processing|shipped|delivered|cancelled|returned
+    items: Mapped[list] = mapped_column(JSON, default=list)  # [{name, qty}]
+    total: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    currency: Mapped[str] = mapped_column(String(3), default="TRY")
+    carrier: Mapped[str | None] = mapped_column(String(100))
+    tracking_number: Mapped[str | None] = mapped_column(String(100))
+    estimated_delivery: Mapped[date | None] = mapped_column(Date)
+
+    __table_args__ = (UniqueConstraint("tenant_id", "order_number", name="uq_orders_number"),)

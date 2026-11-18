@@ -80,3 +80,74 @@ export const api = {
 
   search: (tid: string, query: string, k = 5) => request<SearchResponse>(`/tenants/${tid}/search`, json({ query, k })),
 };
+
+// ---------- Agent tools: settings, appointments, orders, hand-offs ----------
+
+export type Weekday = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+export type BusinessSettings = {
+  timezone: string;
+  tools: { booking: boolean; orders: boolean; handoff: boolean };
+  booking: {
+    slot_minutes: number;
+    hours: Record<Weekday, string | null>;
+    services: { name: string; minutes: number }[];
+    max_days_ahead: number;
+  };
+};
+
+export type Appointment = {
+  id: string;
+  code: string;
+  customer_name: string;
+  customer_contact: string;
+  service: string;
+  start_at: string;
+  end_at: string;
+  status: "confirmed" | "cancelled";
+  notes: string | null;
+  conversation_id: string | null;
+};
+
+export type Order = {
+  id: string;
+  order_number: string;
+  customer_email: string | null;
+  customer_phone: string | null;
+  status: string;
+  items: { name: string; qty: number }[];
+  total: string;
+  currency: string;
+  carrier: string | null;
+  tracking_number: string | null;
+  estimated_delivery: string | null;
+};
+
+export type Handoff = {
+  id: string;
+  title: string | null;
+  status: string;
+  handoff_reason: string | null;
+  handoff_at: string | null;
+  customer_contact: string | null;
+  message_count: number;
+  created_at: string;
+};
+
+const put = (body: unknown): RequestInit => ({
+  method: "PUT",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(body),
+});
+
+export const toolsApi = {
+  getSettings: (tid: string) => request<BusinessSettings>(`/tenants/${tid}/settings`),
+  saveSettings: (tid: string, s: BusinessSettings) => request<BusinessSettings>(`/tenants/${tid}/settings`, put(s)),
+  appointments: (tid: string) => request<Appointment[]>(`/tenants/${tid}/appointments`),
+  cancelAppointment: (tid: string, id: string) =>
+    request<Appointment>(`/tenants/${tid}/appointments/${id}/cancel`, { method: "POST" }),
+  orders: (tid: string) => request<Order[]>(`/tenants/${tid}/orders`),
+  loadDemoOrders: (tid: string) => request<void>(`/tenants/${tid}/orders/demo`, { method: "POST" }),
+  handoffs: (tid: string) => request<Handoff[]>(`/tenants/${tid}/conversations?status=handoff`),
+  resolve: (tid: string, cid: string) =>
+    request<void>(`/tenants/${tid}/conversations/${cid}/resolve`, { method: "POST" }),
+};
