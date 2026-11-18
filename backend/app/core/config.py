@@ -17,10 +17,17 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://rehber:rehber@localhost:5432/rehber"
     redis_url: str = "redis://localhost:6379/0"
 
-    # Chat LLM (Phase 3). Provider is swappable.
-    llm_provider: str = "gemini"
+    # Chat LLM. Provider is swappable; Groq has a free, no-card tier.
+    llm_provider: str = "groq"
+    groq_api_key: str = ""
+    chat_model: str = "openai/gpt-oss-120b"
     gemini_api_key: str = ""
     anthropic_api_key: str = ""
+
+    # RAG answering
+    retrieval_k: int = 6  # passages given to the model
+    min_relevance: float = 0.2  # drop passages below this cosine similarity
+    history_messages: int = 8  # previous messages sent for context
 
     # Embeddings run locally on CPU: free, private, no rate limits.
     # EmbeddingGemma scored 8/8 on our 8-language retrieval check.

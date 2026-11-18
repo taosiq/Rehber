@@ -7,7 +7,7 @@ AI support agent platform. A business uploads its documents (PDFs, website pages
 - answers in 8 languages: Turkish, English, German, Russian, French, Arabic, Persian, Urdu
 - runs as a website chat widget, and later on WhatsApp
 
-**Stack:** Python, FastAPI, LangGraph, PostgreSQL + pgvector, Redis, local multilingual embeddings (EmbeddingGemma via fastembed/ONNX), swappable chat LLM, Next.js dashboard, Docker, GitHub Actions.
+**Stack:** Python, FastAPI, LangGraph, PostgreSQL + pgvector, Redis, local multilingual embeddings (EmbeddingGemma via fastembed/ONNX), Groq-hosted gpt-oss-120b for chat (free tier; provider is swappable), Next.js dashboard, Docker, GitHub Actions.
 
 ## How retrieval works
 
@@ -18,6 +18,19 @@ paragraph/sentence aware) ─▶ embed (EmbeddingGemma-300m, 768-d, runs locally
                                           ▲
 customer question (any language) ─▶ embed ┘ ─▶ top-k passages + document/page citations
 ```
+
+## How answering works
+
+```
+question ─▶ detect language (lingua, 8 languages) ─▶ retrieve top passages (tenant-scoped)
+        ─▶ prompt: numbered sources + strict grounding rules + "reply only in <language>"
+        ─▶ stream tokens to the client over Server-Sent Events
+        ─▶ keep only sources the model actually cited ([1], [2]...) ─▶ save message with
+           sources, language, prompt/completion tokens, time-to-first-token and total latency
+```
+
+- **Grounded:** if the documents don't contain the answer, the agent says so and offers a human. It doesn't invent prices or policies.
+- **Measured from day one:** every answer stores its token usage and speed, which feeds per-business cost and latency tracking (Phase 7).
 
 - **Multilingual:** a question in Turkish, Arabic or Urdu finds English documents (and the other way around). It was checked on 8 languages; see `backend/tests`.
 - **Tenant isolation:** every search and document query filters on `tenant_id`, and there are tests proving one business can't see another's data.
@@ -52,7 +65,7 @@ uvicorn app.main:app --reload        # API docs: http://localhost:8000/docs
 
 # 3. Frontend
 cd frontend
-npm run dev                          # http://localhost:3000/dashboard
+npm run dev                          # http://localhost:3000/dashboard (Knowledge) and /dashboard/chat (Playground)
 ```
 
 Tests (one-time setup: `docker exec rehber-db-1 createdb -U rehber rehber_test`):
@@ -62,7 +75,7 @@ Tests (one-time setup: `docker exec rehber-db-1 createdb -U rehber rehber_test`)
 
 - [x] 1. Foundation: backend skeleton, DB models, Docker, animated landing page
 - [x] 2. Document ingestion: PDF/URL/text upload, chunking, local embeddings into pgvector, search, Knowledge dashboard
-- [ ] 3. RAG chat with streaming answers and source citations
+- [x] 3. RAG chat: streaming answers (SSE), citations, language detection, conversation memory, Chat Playground
 - [ ] 4. LangGraph agent with tools (booking, orders, human handoff)
 - [ ] 5. Multi-tenancy: auth, API keys, data kept separate per business
 - [ ] 6. Embeddable chat widget + 8 languages (TR, EN, DE, RU, FR, AR, FA, UR; incl. RTL)
