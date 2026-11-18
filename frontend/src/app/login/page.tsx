@@ -41,7 +41,7 @@ export default function LoginPage() {
           <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)}
             placeholder="you@business.com" className={inputCls} />
         </Field>
-        <Field label="Password">
+        <Field label="Password" hint={<Link href="/forgot-password" className="mt-2 inline-block text-sm text-accent hover:underline">Forgot your password?</Link>}>
           <div className="relative">
             <input type={show ? "text" : "password"} autoComplete="current-password" required value={password}
               onChange={(e) => setPassword(e.target.value)} className={`${inputCls} pe-12`} />

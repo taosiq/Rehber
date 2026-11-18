@@ -117,7 +117,7 @@ The first run found real problems that are now fixed and covered by tests: Frenc
 
 Automated: `tests/test_security.py` attacks every route without credentials and as another user, plus CSRF, roles, rate limits, key misuse, CORS and headers.
 
-**Known gaps (planned):** email verification, password reset and invitation emails need an email provider (Phase 9). Until then invite links are shared by hand.
+**Password reset:** links are emailed, stored as SHA-256, valid 1 hour and single-use. The request gives the same answer whether or not the account exists, and a reset signs out every device. **Known gap:** email-address verification at sign-up.
 
 ## Layout
 
@@ -135,6 +135,31 @@ frontend/         Next.js landing page + admin dashboard
   public/widget-test.html  sample website for trying the widget
 docker-compose.yml   Postgres (pgvector) + Redis
 ```
+
+## Online (production)
+
+[![CI](https://github.com/taosiq/Rehber/actions/workflows/ci.yml/badge.svg)](https://github.com/taosiq/Rehber/actions/workflows/ci.yml)
+
+Rehber runs in production on a home PC, published with **Tailscale Funnel**: a free, permanent `https://<pc>.<tailnet>.ts.net` address, no domain or credit card needed, and streaming works (Cloudflare quick tunnels don't support Server-Sent Events).
+
+```
+internet ─HTTPS─▶ Tailscale Funnel ─▶ web (Next.js, 127.0.0.1:3100) ─/api/*─▶ api (FastAPI) ─▶ db (pgvector) + redis
+                                       └─ only this port is published; api, db and redis stay inside Docker
+```
+
+- **One address** for the dashboard, the API (`/api`, forwarded by Next.js) and the widget, so login cookies stay first-party (`Secure`, `HttpOnly`, `SameSite=Lax`).
+- **Everything in Docker** with `restart: unless-stopped`, so it comes back after a reboot as soon as Docker Desktop starts. The embedding model and uploads are mounted from `backend/.models` and `backend/storage`.
+- **Real visitor IPs for rate limits:** `TRUST_PROXY` reads `X-Forwarded-For` only from local proxies, right to left, so clients can't spoof their address.
+- **Production safety:** the API refuses to start without a strong `SECRET_KEY`, `COOKIE_SECURE`, an `https://` `PUBLIC_URL`, and complete email settings. API docs are disabled.
+- **Emails** (password reset, team invitations, "a customer needs a human") go through Brevo's HTTPS API. Many hosts block SMTP ports.
+
+```bash
+# one-time: copy .env.example to .env and set PUBLIC_URL; put secrets in backend/.env
+docker compose --profile prod up -d --build      # or double-click Start-Rehber.bat
+tailscale funnel --bg 3100                       # publish the website (persists across reboots)
+```
+
+**CI** (`.github/workflows/ci.yml`): on every push, the backend tests run against real Postgres + pgvector and Redis, then lint, type-check and build the website, then build both Docker images.
 
 ## Run locally
 
@@ -168,5 +193,5 @@ Tests (one-time setup: `docker exec rehber-db-1 createdb -U rehber rehber_test`)
 - [x] 6. Embeddable chat widget + 8 languages (TR, EN, DE, RU, FR, AR, FA, UR; incl. RTL), live preview, sample site
 - [x] 7. Evaluation set (17 cases, 8 languages), Langfuse tracing with PII masking, cost/speed/reliability analytics per business
 - [x] 8. Full dashboard: overview, team inbox with live human take-over in the widget, team & invitations, business/account settings, mobile navigation
-- [ ] 9. CI (GitHub Actions) and deploy online
+- [x] 9. CI (GitHub Actions), production Docker stack published with Tailscale Funnel, emails (password reset, invites, hand-off alerts)
 - [ ] 10. WhatsApp channel

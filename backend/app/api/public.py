@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.business import OrderIn, _upsert_orders
 from app.core import ratelimit
+from app.core.net import client_ip
 from app.core.security import sha256, sign, verify_signature
 from app.db.session import SessionLocal, get_db
 from app.models import ApiKey, Conversation, Message, Tenant, User
@@ -57,7 +58,7 @@ async def secret_key(request: Request, db: AsyncSession = Depends(get_db)) -> Ap
 
 
 def _ip(request: Request) -> str:
-    return request.client.host if request.client else "unknown"
+    return client_ip(request)
 
 
 # ---------------------------------------------------------------- widget

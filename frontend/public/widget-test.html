@@ -51,7 +51,8 @@
       // The key is passed in the URL fragment (#key=...), which browsers never send to a server.
       var params = new URLSearchParams(location.hash.slice(1));
       var key = params.get("key");
-      var api = params.get("api") || "http://localhost:8000/api";
+      // Development runs the API on its own port; in production it lives under /api on this site.
+      var api = params.get("api") || (location.port === "3000" ? "http://localhost:8000/api" : location.origin + "/api");
       function load(k, a) {
         var s = document.createElement("script");
         s.src = "/widget.js";

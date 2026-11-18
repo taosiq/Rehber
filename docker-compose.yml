@@ -1,3 +1,8 @@
+# Development:  docker compose up -d                  (database + Redis; run API and website yourself)
+# Production:   docker compose --profile prod up -d --build
+#               -> everything in Docker, website on http://127.0.0.1:3100 (Tailscale Funnel publishes it)
+#
+# Ports are bound to 127.0.0.1 only: nothing here is reachable from other devices on your network.
 services:
   db:
     image: pgvector/pgvector:pg17
@@ -6,18 +11,54 @@ services:
       POSTGRES_PASSWORD: rehber
       POSTGRES_DB: rehber
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U rehber"]
       interval: 5s
       retries: 10
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
+    restart: unless-stopped
+
+  api:
+    profiles: ["prod"]
+    build: ./backend
+    env_file: ./backend/.env  # secrets (GROQ_API_KEY, SECRET_KEY, BREVO_API_KEY, ...)
+    environment:
+      DATABASE_URL: postgresql+asyncpg://rehber:rehber@db:5432/rehber
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: production
+      COOKIE_SECURE: "true"
+      TRUST_PROXY: "true"
+      PUBLIC_URL: ${PUBLIC_URL:?Set PUBLIC_URL in the .env file next to docker-compose.yml}
+      CORS_ORIGINS: '["${PUBLIC_URL}"]'
+    volumes:
+      - ./backend/.models:/app/.models    # the embedding model, downloaded once
+      - ./backend/storage:/app/storage    # uploaded PDFs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  web:
+    profiles: ["prod"]
+    build:
+      context: ./frontend
+      args:
+        BACKEND_INTERNAL_URL: http://api:8000
+    ports:
+      - "127.0.0.1:3100:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
 
 volumes:
   pgdata:

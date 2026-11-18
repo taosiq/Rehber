@@ -6,8 +6,8 @@ import os
 import re
 
 os.environ["ENVIRONMENT"] = "test"
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://rehber:rehber@localhost:5432/rehber_test"
-os.environ["REDIS_URL"] = "redis://localhost:6379/15"  # separate Redis DB, flushed per test
+os.environ["DATABASE_URL"] = "postgresql+asyncpg://rehber:rehber@127.0.0.1:5432/rehber_test"
+os.environ["REDIS_URL"] = "redis://127.0.0.1:6379/15"  # separate Redis DB, flushed per test
 os.environ["SECRET_KEY"] = "test-secret-key-0123456789-abcdefghijklmnop"
 
 import numpy as np  # noqa: E402

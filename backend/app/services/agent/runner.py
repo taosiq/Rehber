@@ -23,7 +23,7 @@ from app.services.agent.sources import SourceRegistry
 from app.services.agent.tools import ToolContext, build_tools
 from app.services.business import load_settings
 from app.services.language import detect_language
-from app.services import tracing
+from app.services import notify, tracing
 from app.services.tracing import EMAIL, PHONE
 from app.services.pricing import estimate_cost
 from app.services.search import search_chunks
@@ -118,6 +118,7 @@ async def run_turn(
         convo.status = "open"  # the customer came back: it needs attention again
     if not convo.customer_contact:
         convo.customer_contact = find_contact(question)  # so the team knows who they're talking to
+    was_handoff = convo.status == "handoff"
     await db.commit()
 
     if convo.ai_paused:
@@ -237,3 +238,10 @@ async def run_turn(
         "latency_ms": latency_ms, "first_token_ms": first_token_ms,
         "cost_usd": float(msg.cost_usd) if msg.cost_usd is not None else None, "trace_id": trace_id,
     })
+
+    # After the customer has their answer: email the team if this turn handed the chat to a human.
+    if convo.status == "handoff" and not was_handoff:
+        try:
+            await notify.handoff(tenant.id, convo.id)
+        except Exception:
+            log.exception("Hand-off alert failed")

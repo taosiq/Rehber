@@ -391,7 +391,11 @@ function InstallCard({ tid, canManage }: { tid: string; canManage: boolean }) {
 
   const widgetKeys = keys.filter((k) => k.kind === "publishable" && !k.revoked_at);
   const keyValue = created?.key ?? "pk_PASTE_YOUR_WIDGET_KEY";
-  const snippet = `<script src="${origin}/widget.js"\n        data-key="${keyValue}"\n        data-api="${API_URL}" defer></script>`;
+  // The snippet runs on other websites, so it needs the full API address even when the dashboard uses "/api".
+  const apiBase = API_URL.startsWith("http") ? API_URL : `${origin}${API_URL}`;
+  const snippet = `<script src="${origin}/widget.js"
+        data-key="${keyValue}"
+        data-api="${apiBase}" defer></script>`;
   const canTest = !!created && created.origins.includes(origin.toLowerCase());
 
   const create = async (e: React.FormEvent) => {
@@ -475,7 +479,7 @@ function InstallCard({ tid, canManage }: { tid: string; canManage: boolean }) {
             <pre className="overflow-x-auto p-4 font-mono text-[13px] leading-relaxed text-foreground/90"><code>
               <span className="text-violet-300">&lt;script</span> <span className="text-cyan-300">src</span>=<span className="text-amber-200">&quot;{origin}/widget.js&quot;</span>{"\n        "}
               <span className="text-cyan-300">data-key</span>=<span className={clsx(created ? "text-emerald-300" : "text-amber-200/60")}>&quot;{keyValue}&quot;</span>{"\n        "}
-              <span className="text-cyan-300">data-api</span>=<span className="text-amber-200">&quot;{API_URL}&quot;</span> <span className="text-cyan-300">defer</span><span className="text-violet-300">&gt;&lt;/script&gt;</span>
+              <span className="text-cyan-300">data-api</span>=<span className="text-amber-200">&quot;{apiBase}&quot;</span> <span className="text-cyan-300">defer</span><span className="text-violet-300">&gt;&lt;/script&gt;</span>
             </code></pre>
           </div>
           <p className="mt-2 text-sm text-muted">Works with any website: WordPress, Shopify, Wix, or plain HTML. Optional: <code className="font-mono text-xs">data-lang=&quot;tr&quot;</code> forces a language.</p>
@@ -484,7 +488,7 @@ function InstallCard({ tid, canManage }: { tid: string; canManage: boolean }) {
         <div>
           {step(3, "Try it")}
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <a href={canTest ? `/widget-test.html#key=${encodeURIComponent(created!.key)}&api=${encodeURIComponent(API_URL)}` : undefined}
+            <a href={canTest ? `/widget-test.html#key=${encodeURIComponent(created!.key)}&api=${encodeURIComponent(apiBase)}` : undefined}
               target="_blank" rel="noopener noreferrer" aria-disabled={!canTest}
               className={clsx("inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition-colors",
                 canTest ? "bg-accent text-black hover:brightness-110" : "pointer-events-none bg-white/5 text-muted")}>

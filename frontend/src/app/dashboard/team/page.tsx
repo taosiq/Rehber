@@ -37,7 +37,7 @@ export default function TeamPage() {
   const [members, setMembers] = useState<Member[] | null>(null);
   const [invites, setInvites] = useState<Invitation[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [link, setLink] = useState<{ url: string; email: string } | null>(null);
+  const [link, setLink] = useState<{ url: string; email: string; emailed: boolean } | null>(null);
 
   const load = useCallback(async () => {
     if (!tid) return;
@@ -104,7 +104,7 @@ export default function TeamPage() {
               setError(null);
               try {
                 const res = await teamApi.invite(current.id, email, role);
-                setLink({ url: `${window.location.origin}/invite/${res.token}`, email: res.email });
+                setLink({ url: `${window.location.origin}/invite/${res.token}`, email: res.email, emailed: res.emailed });
                 await load();
                 return true;
               } catch (e) {
@@ -243,7 +243,7 @@ function InviteCard({ myRole, onInvite }: { myRole: Role; onInvite: (email: stri
           {busy ? <Loader2 size={17} className="animate-spin" /> : <Link2 size={17} />} Create invite link
         </motion.button>
         <p className="text-xs text-muted">
-          You get a private link to send by WhatsApp or email. It works once, for 7 days, and only for an account with this email.
+          We email the link (when email is set up) and show it to you once. It works once, for 7 days, and only for an account with this email.
           {myRole !== "owner" && " Only owners can add other owners."}
         </p>
       </form>
@@ -251,7 +251,7 @@ function InviteCard({ myRole, onInvite }: { myRole: Role; onInvite: (email: stri
   );
 }
 
-function LinkModal({ link, onClose }: { link: { url: string; email: string }; onClose: () => void }) {
+function LinkModal({ link, onClose }: { link: { url: string; email: string; emailed: boolean }; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -263,7 +263,10 @@ function LinkModal({ link, onClose }: { link: { url: string; email: string }; on
             className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-400/15 text-emerald-300"><Link2 size={20} /></motion.span>
           <h2 className="font-display text-3xl">Invite link ready</h2>
         </div>
-        <p className="mt-4 text-muted">Send this link to <b className="text-foreground">{link.email}</b>. They sign up or log in with that email and join your team.</p>
+        <p className="mt-4 text-muted">
+          {link.emailed ? <>We emailed this link to <b className="text-foreground">{link.email}</b>. You can also send it yourself, for example on WhatsApp.</>
+            : <>Send this link to <b className="text-foreground">{link.email}</b>. They sign up or log in with that email and join your team.</>}
+        </p>
         <p className="mt-3 flex items-start gap-2 rounded-xl border border-amber-300/30 bg-amber-300/10 p-3 text-sm text-amber-100">
           <AlertTriangle size={16} className="mt-0.5 shrink-0" /> Copy it now: for security we only keep a fingerprint of it, so it can&apos;t be shown again.
         </p>

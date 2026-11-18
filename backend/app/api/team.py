@@ -22,9 +22,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.auth import _email
 from app.api.deps import CurrentUser, get_current_user, get_membership, get_tenant, require_role
 from app.core import ratelimit
+from app.core.config import get_settings
+from app.core.net import client_ip
 from app.core.security import new_token, sha256
 from app.db.session import get_db
 from app.models import ROLES, Invitation, Membership, Tenant, User
+from app.services import email
 
 router = APIRouter(tags=["team"])
 INVITE_DAYS = 7
@@ -154,7 +157,10 @@ async def invite(body: InviteIn, current: CurrentUser = Depends(get_current_user
                      invited_by=current.user.id, expires_at=now + timedelta(days=INVITE_DAYS))
     db.add(inv)
     await db.commit()
-    return {"id": str(inv.id), "email": inv.email, "role": inv.role, "expires_at": inv.expires_at, "token": token}
+    url = f"{get_settings().public_url.rstrip('/')}/invite/{token}"
+    sent = await email.send(email.invitation(inv.email, tenant.name, current.user.name, inv.role, url))
+    return {"id": str(inv.id), "email": inv.email, "role": inv.role, "expires_at": inv.expires_at, "token": token,
+            "emailed": bool(sent and email.enabled())}
 
 
 @router.delete("/tenants/{tenant_id}/invitations/{invitation_id}", status_code=204,
@@ -180,7 +186,7 @@ async def _valid_invitation(db: AsyncSession, token: str) -> Invitation:
 @router.get("/invitations/{token}")
 async def view_invitation(token: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Public: what the invite page shows before logging in. Knowing the token is the permission."""
-    ip = request.client.host if request.client else "unknown"
+    ip = client_ip(request)
     await ratelimit.enforce(f"invite-view:{ip}", 30, 600)
     inv = await _valid_invitation(db, token)
     tenant = await db.get(Tenant, inv.tenant_id)
