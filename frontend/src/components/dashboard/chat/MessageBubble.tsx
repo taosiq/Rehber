@@ -9,7 +9,8 @@ import { ToolCard } from "./ToolCard";
 
 export type UiMessage = {
   key: string;
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "staff";
+  author?: string | null; // staff replies
   content: string;
   language?: string | null;
   sources?: ChatSource[]; // cited passages (after done)
@@ -139,8 +140,19 @@ export function MessageBubble({ msg }: { msg: UiMessage }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 260, damping: 26 }} className="flex gap-3">
-      <div className="mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent to-violet text-sm font-bold text-black">R</div>
+      {msg.role === "staff" ? (
+        <div className="mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-emerald-400 to-cyan text-xs font-bold text-black" title={msg.author ?? "Team"}>
+          {(msg.author ?? "T").split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
+        </div>
+      ) : (
+        <div className="mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent to-violet text-sm font-bold text-black">R</div>
+      )}
       <div className="min-w-0 max-w-[82%] flex-1">
+        {msg.role === "staff" && (
+          <p className="mb-1 flex items-center gap-2 text-xs text-emerald-300">
+            {msg.author ?? "Team member"} <span className="rounded-md bg-emerald-400/15 px-1.5 py-0.5 text-[10px] uppercase tracking-wider">Team</span>
+          </p>
+        )}
         {msg.tools && msg.tools.length > 0 && (
           <div className="mb-2.5 flex flex-col items-start gap-2 [&>*]:w-full [&>*]:max-w-md">
             {msg.tools.map((t) => <ToolCard key={t.id} call={t} />)}
@@ -151,7 +163,8 @@ export function MessageBubble({ msg }: { msg: UiMessage }) {
           dir={rtl ? "rtl" : "ltr"}
           className={clsx(
             "rounded-3xl rounded-ss-md border px-5 py-3.5 text-base leading-relaxed",
-            msg.error ? "border-red-400/30 bg-red-400/10 text-red-200" : "border-line bg-white/[0.04]",
+            msg.error ? "border-red-400/30 bg-red-400/10 text-red-200"
+              : msg.role === "staff" ? "border-emerald-400/25 bg-emerald-400/[0.07]" : "border-line bg-white/[0.04]",
           )}
         >
           {msg.error ? (

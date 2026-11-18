@@ -37,7 +37,8 @@ async def make_biz(c, name="Biz"):
 
 # ---------------------------------------------------------------- every route is protected
 
-PUBLIC = {("GET", "/api/health"), ("GET", "/api/health/db"), ("POST", "/api/auth/signup"), ("POST", "/api/auth/login")}
+PUBLIC = {("GET", "/api/health"), ("GET", "/api/health/db"), ("POST", "/api/auth/signup"), ("POST", "/api/auth/login"),
+          ("GET", "/api/invitations/{token}")}  # invite preview: the secret token is the permission
 
 
 async def test_every_non_public_route_requires_authentication(anon_client):

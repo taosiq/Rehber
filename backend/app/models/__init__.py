@@ -11,6 +11,7 @@ from decimal import Decimal
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     JSON,
+    Boolean,
     Date,
     DateTime,
     ForeignKey,
@@ -107,6 +108,11 @@ class Conversation(TimestampMixin, Base):
     # An action proposed by the agent that waits for the customer's confirmation
     # in their next message (e.g. a booking). Enforced in code, not just the prompt.
     pending_action: Mapped[dict | None] = mapped_column(JSON)
+    # Inbox: a team member can take over; while ai_paused the agent stays silent.
+    ai_paused: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+    assigned_to: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    last_message_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    staff_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     messages: Mapped[list["Message"]] = relationship(
         back_populates="conversation", cascade="all, delete-orphan", order_by="Message.created_at"
@@ -122,7 +128,8 @@ class Message(TimestampMixin, Base):
     conversation_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("conversations.id", ondelete="CASCADE"), index=True
     )
-    role: Mapped[str] = mapped_column(String(20))  # user | assistant
+    role: Mapped[str] = mapped_column(String(20))  # user | assistant | staff
+    author_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))  # staff replies
     content: Mapped[str] = mapped_column(Text)
     language: Mapped[str | None] = mapped_column(String(5))  # detected, e.g. "tr"
     sources: Mapped[list | None] = mapped_column(JSON)  # cited passages
@@ -253,4 +260,19 @@ class ApiKey(TimestampMixin, Base):
     allowed_origins: Mapped[list] = mapped_column(JSON, default=list)  # publishable only
     created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Invitation(TimestampMixin, Base):
+    """An invite link to join a business. Only the SHA-256 of the link token is stored."""
+
+    __tablename__ = "invitations"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
+    email: Mapped[str] = mapped_column(String(320))  # lower-case; only this account can accept
+    role: Mapped[str] = mapped_column(String(20))  # admin | member
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    invited_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

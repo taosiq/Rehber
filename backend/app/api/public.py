@@ -20,7 +20,7 @@ from app.api.business import OrderIn, _upsert_orders
 from app.core import ratelimit
 from app.core.security import sha256, sign, verify_signature
 from app.db.session import SessionLocal, get_db
-from app.models import ApiKey, Conversation, Message, Tenant
+from app.models import ApiKey, Conversation, Message, Tenant, User
 from app.services.agent.runner import run_turn
 from app.services.business import load_settings
 
@@ -81,6 +81,7 @@ def public_event(event: str, data: dict) -> dict | None:
         return {"id": data.get("id"), "name": data.get("name"), "status": data.get("status")}
     if event == "done":
         return {"message_id": data["message_id"], "conversation_status": data.get("conversation_status"),
+                "ai_paused": bool(data.get("ai_paused")),
                 "cited": [public_source(s) for s in data.get("cited") or []]}
     if event == "error":
         return {"message": data.get("message", "Something went wrong.")}
@@ -127,18 +128,22 @@ async def _widget_conversation(db: AsyncSession, key: ApiKey, conversation_id: u
 @router.post("/public/history")
 async def widget_history(request: Request, body: WidgetHistoryIn, key: ApiKey = Depends(publishable_key),
                          db: AsyncSession = Depends(get_db)):
-    """Restore the visitor's conversation after a page reload."""
-    await ratelimit.enforce(f"widget:history:{key.id}:{_ip(request)}", 30, 60, "Too many requests.")
+    """Restore the visitor's conversation after a page reload, and poll for team replies after a take-over."""
+    await ratelimit.enforce(f"widget:history:{key.id}:{_ip(request)}", 40, 60, "Too many requests.")
     convo = await _widget_conversation(db, key, body.conversation_id, body.conversation_token)
-    rows = (await db.scalars(
-        select(Message).where(Message.conversation_id == convo.id).order_by(Message.created_at.desc()).limit(50)
+    rows = (await db.execute(
+        select(Message, User.name).outerjoin(User, User.id == Message.author_id)
+        .where(Message.conversation_id == convo.id).order_by(Message.created_at.desc()).limit(50)
     )).all()
     return {
         "status": convo.status,
+        "ai_paused": convo.ai_paused,
         "messages": [
-            {"role": m.role, "content": m.content, "language": m.language,
+            {"id": str(m.id), "role": m.role, "content": m.content, "language": m.language,
+             # Staff replies show only the team member's first name to visitors.
+             "author": (name or "").split(" ")[0] or None if m.role == "staff" else None,
              "cited": [public_source(s) for s in m.sources or []]}
-            for m in reversed(rows)
+            for m, name in reversed(rows)
         ],
     }
 

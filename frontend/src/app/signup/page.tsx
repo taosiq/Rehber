@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
@@ -27,6 +27,12 @@ export default function SignupPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const score = strength(password);
+
+  // Invitation links pass the invited address (?email=), so the account matches the invite.
+  useEffect(() => {
+    const invited = new URLSearchParams(window.location.search).get("email");
+    if (invited) Promise.resolve().then(() => setEmail(invited));
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
