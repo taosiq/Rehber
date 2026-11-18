@@ -1,0 +1,8 @@
+.venv
+.models
+storage
+.env
+.pytest_cache
+**/__pycache__
+tests
+evals/reports/eval-*.json

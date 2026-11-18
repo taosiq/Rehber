@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     app_name: str = "Rehber"
     environment: str = "development"
 
-    database_url: str = "postgresql+asyncpg://rehber:rehber@localhost:5432/rehber"
-    redis_url: str = "redis://localhost:6379/0"
+    database_url: str = "postgresql+asyncpg://rehber:rehber@127.0.0.1:5432/rehber"
+    redis_url: str = "redis://127.0.0.1:6379/0"
 
     # Chat LLM. Provider is swappable; Groq has a free, no-card tier.
     llm_provider: str = "groq"
@@ -65,6 +65,20 @@ class Settings(BaseSettings):
     session_cookie: str = "rehber_session"
     cookie_secure: bool = False  # True in production (HTTPS only)
     cookie_domain: str | None = None  # e.g. ".rehber.app" when API and dashboard are on subdomains
+    # Behind our own proxies (Tailscale Funnel -> Next.js -> API) read the visitor IP from
+    # X-Forwarded-For, but only when the request comes from a local proxy. See app/core/net.py.
+    trust_proxy: bool = False
+
+    # The address people use to open Rehber, used in email links, e.g. https://rehber-pc.tail1234.ts.net
+    public_url: str = "http://localhost:3000"
+
+    # --- Email ---
+    # "console" prints emails to the log (development). "brevo" sends through Brevo's HTTPS API
+    # (free: 300/day); HTTPS works where SMTP ports are blocked.
+    email_provider: str = "console"
+    brevo_api_key: str = ""
+    email_from: str = ""  # a sender address verified in Brevo, e.g. you@gmail.com
+    email_from_name: str = "Rehber"
 
     def check_production_safety(self) -> None:
         """Refuse to start in production with development defaults."""
@@ -73,6 +87,10 @@ class Settings(BaseSettings):
                 raise RuntimeError("Set a strong SECRET_KEY (32+ random characters) in production.")
             if not self.cookie_secure:
                 raise RuntimeError("COOKIE_SECURE must be true in production.")
+            if not self.public_url.startswith("https://"):
+                raise RuntimeError("PUBLIC_URL must be the https:// address of the site in production.")
+            if self.email_provider == "brevo" and not (self.brevo_api_key and self.email_from):
+                raise RuntimeError("EMAIL_PROVIDER=brevo needs BREVO_API_KEY and EMAIL_FROM.")
 
     @property
     def async_database_url(self) -> str:

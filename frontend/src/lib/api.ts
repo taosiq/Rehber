@@ -96,6 +96,8 @@ export const authApi = {
   login: (email: string, password: string) => request<Me>("/auth/login", json({ email, password })),
   signup: (name: string, email: string, password: string) => request<Me>("/auth/signup", json({ name, email, password })),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
+  forgot: (email: string) => request<{ detail: string }>("/auth/forgot", json({ email })),
+  reset: (token: string, new_password: string) => request<void>("/auth/reset", json({ token, new_password })),
 };
 
 // ---------- API keys ----------
@@ -335,7 +337,7 @@ export const teamApi = {
   remove: (tid: string, uid: string) => request<void>(`/tenants/${tid}/members/${uid}`, send("DELETE")),
   invitations: (tid: string) => request<Invitation[]>(`/tenants/${tid}/invitations`),
   invite: (tid: string, email: string, role: Role) =>
-    request<{ id: string; email: string; role: Role; expires_at: string; token: string }>(`/tenants/${tid}/invitations`, send("POST", { email, role })),
+    request<{ id: string; email: string; role: Role; expires_at: string; token: string; emailed: boolean }>(`/tenants/${tid}/invitations`, send("POST", { email, role })),
   revoke: (tid: string, id: string) => request<void>(`/tenants/${tid}/invitations/${id}`, send("DELETE")),
   preview: (token: string) => request<InvitationPreview>(`/invitations/${encodeURIComponent(token)}`),
   accept: (token: string) => request<{ tenant_id: string }>(`/invitations/${encodeURIComponent(token)}/accept`, send("POST")),

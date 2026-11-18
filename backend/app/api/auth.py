@@ -1,20 +1,23 @@
 """Sign up, log in, log out, current user."""
 
+import asyncio
 import re
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser, get_current_user
 from app.core import ratelimit
 from app.core.config import get_settings
+from app.core.net import client_ip
 from app.core.security import hash_password, new_token, sha256, verify_password
 from app.db.session import get_db
-from app.models import AuthSession, Membership, Tenant, User
+from app.services import email
+from app.models import AuthSession, Membership, PasswordReset, Tenant, User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -66,7 +69,7 @@ class MeOut(BaseModel):
 
 
 def _client_ip(request: Request) -> str:
-    return request.client.host if request.client else "unknown"
+    return client_ip(request)
 
 
 async def _me(db: AsyncSession, user: User, session: AuthSession) -> MeOut:
@@ -214,3 +217,68 @@ async def list_sessions(current: CurrentUser = Depends(get_current_user), db: As
 async def revoke_other_sessions(current: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     await db.execute(delete(AuthSession).where(AuthSession.user_id == current.user.id, AuthSession.id != current.session.id))
     await db.commit()
+
+
+
+# ---------------------------------------------------------------- forgot / reset password
+
+RESET_MINUTES = 60
+GENERIC_SENT = "If an account exists for that email, we've sent a link to reset the password."
+
+
+class ForgotIn(BaseModel):
+    email: str
+
+    _norm_email = field_validator("email")(_email)
+
+
+class ResetIn(BaseModel):
+    token: str = Field(min_length=10, max_length=128)
+    new_password: str = Field(min_length=10, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def _strong_enough(cls, v: str) -> str:
+        if len(set(v)) < 5:
+            raise ValueError("Password is too simple. Use at least 10 characters with some variety.")
+        return v
+
+
+@router.post("/forgot", status_code=202)
+async def forgot_password(body: ForgotIn, request: Request, db: AsyncSession = Depends(get_db)):
+    """Always gives the same answer, so it can't be used to find out who has an account."""
+    await ratelimit.enforce(f"forgot:ip:{_client_ip(request)}", 10, 3600, "Too many requests. Try again later.")
+    await ratelimit.enforce(f"forgot:email:{body.email}", 3, 3600, "Too many requests. Try again later.")
+    user = await db.scalar(select(User).where(User.email == body.email))
+    if user is not None:
+        now = datetime.now(timezone.utc)
+        await db.execute(update(PasswordReset).where(PasswordReset.user_id == user.id, PasswordReset.used_at.is_(None))
+                         .values(used_at=now))  # only the newest link works
+        token = new_token(32)
+        db.add(PasswordReset(user_id=user.id, token_hash=sha256(token), expires_at=now + timedelta(minutes=RESET_MINUTES)))
+        await db.commit()
+        url = f"{get_settings().public_url.rstrip('/')}/reset-password/{token}"
+        # Sent in the background so the answer takes the same time whether or not the account exists.
+        task = asyncio.create_task(email.send(email.password_reset(user.email, user.name.split(" ")[0], url)))
+        _background.add(task)
+        task.add_done_callback(_background.discard)
+    return {"detail": GENERIC_SENT}
+
+
+_background: set[asyncio.Task] = set()
+
+
+@router.post("/reset", status_code=204)
+async def reset_password(body: ResetIn, request: Request, db: AsyncSession = Depends(get_db)):
+    """Set a new password with a link from the email. Signs out every device."""
+    await ratelimit.enforce(f"reset:ip:{_client_ip(request)}", 20, 3600, "Too many attempts. Try again later.")
+    now = datetime.now(timezone.utc)
+    reset = await db.scalar(select(PasswordReset).where(PasswordReset.token_hash == sha256(body.token)))
+    if reset is None or reset.used_at is not None or reset.expires_at <= now:
+        raise HTTPException(400, "This reset link is invalid or has expired. Ask for a new one.")
+    user = await db.get(User, reset.user_id)
+    user.password_hash = hash_password(body.new_password)
+    reset.used_at = now
+    await db.execute(delete(AuthSession).where(AuthSession.user_id == user.id))
+    await db.commit()
+    await ratelimit.clear(f"login:email:{user.email}")

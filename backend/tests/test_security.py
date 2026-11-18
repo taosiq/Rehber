@@ -38,7 +38,8 @@ async def make_biz(c, name="Biz"):
 # ---------------------------------------------------------------- every route is protected
 
 PUBLIC = {("GET", "/api/health"), ("GET", "/api/health/db"), ("POST", "/api/auth/signup"), ("POST", "/api/auth/login"),
-          ("GET", "/api/invitations/{token}")}  # invite preview: the secret token is the permission
+          ("GET", "/api/invitations/{token}"),  # invite preview: the secret token is the permission
+          ("POST", "/api/auth/forgot"), ("POST", "/api/auth/reset")}  # password reset: answer is the same for everyone
 
 
 async def test_every_non_public_route_requires_authentication(anon_client):
@@ -318,4 +319,4 @@ def test_production_refuses_insecure_defaults():
         Settings(environment="production", secret_key="dev-insecure-change-me").check_production_safety()
     with pytest.raises(RuntimeError, match="COOKIE_SECURE"):
         Settings(environment="production", secret_key="x" * 40).check_production_safety()
-    Settings(environment="production", secret_key="x" * 40, cookie_secure=True).check_production_safety()
+    Settings(environment="production", secret_key="x" * 40, cookie_secure=True, public_url="https://r.ts.net").check_production_safety()
