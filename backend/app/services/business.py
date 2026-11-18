@@ -1,6 +1,11 @@
 """Per-business agent settings, stored in `tenants.settings` (JSON)."""
 
+import re
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
+
+LANGUAGES = ["tr", "en", "de", "ru", "fr", "ar", "fa", "ur"]
 
 WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
@@ -52,10 +57,42 @@ class ToolSwitches(BaseModel):
     handoff: bool = True
 
 
+class WidgetSettings(BaseModel):
+    """How the website chat widget looks. Everything here is public (sent to every visitor)."""
+
+    title: str | None = Field(default=None, max_length=60)  # defaults to the business name
+    color: str = "#f5b544"
+    position: Literal["right", "left"] = "right"
+    # Custom greeting per language; languages without one use the widget's built-in greeting.
+    greetings: dict[str, str] = Field(default_factory=dict)
+    suggestions: bool = True  # quick-reply chips for the enabled tools
+
+    @field_validator("color")
+    @classmethod
+    def _check_color(cls, v: str) -> str:
+        if not re.fullmatch(r"#[0-9a-fA-F]{6}", v):
+            raise ValueError("Color must look like #f5b544")
+        return v.lower()
+
+    @field_validator("greetings")
+    @classmethod
+    def _check_greetings(cls, v: dict[str, str]) -> dict[str, str]:
+        out = {}
+        for lang, text in v.items():
+            if lang not in LANGUAGES:
+                raise ValueError(f"Unsupported language '{lang}'")
+            if len(text) > 300:
+                raise ValueError("Greetings can be at most 300 characters")
+            if text.strip():
+                out[lang] = text.strip()
+        return out
+
+
 class BusinessSettings(BaseModel):
     timezone: str = "Europe/Istanbul"
     tools: ToolSwitches = Field(default_factory=ToolSwitches)
     booking: BookingSettings = Field(default_factory=BookingSettings)
+    widget: WidgetSettings = Field(default_factory=WidgetSettings)
 
 
 def load_settings(raw: dict | None) -> BusinessSettings:

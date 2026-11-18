@@ -54,6 +54,21 @@ START ─▶ agent (LLM + tools) ──tool calls?──▶ tools ─▶ agent �
 - **Tenant isolation:** every search and document query filters on `tenant_id`, and there are tests proving one business can't see another's data.
 - **Safe URL ingestion:** private and localhost addresses are blocked (SSRF protection). The crawler identifies itself honestly, and sites that refuse it get a clear error.
 
+## Website widget
+
+One line on any website (WordPress, Shopify, Wix, plain HTML):
+
+```html
+<script src="https://YOUR-REHBER/widget.js" data-key="pk_..." data-api="https://YOUR-API/api" defer></script>
+```
+
+- **No dependencies, one file** (`frontend/public/widget.js`), rendered in a Shadow DOM, so the widget and the host page can't break each other's styles.
+- **8 languages with RTL.** It opens in the visitor's browser language and switches to the language they write in: an Arabic, Persian or Urdu question flips the whole UI right-to-left.
+- Streaming answers, citation chips and source list, tool status ("Checking available times…"), quick-reply suggestions for the enabled tools, a hand-off notice, and a conversation that survives page reloads (signed token in `localStorage`).
+- Animated launcher, opening panel, typing dots and message entrance. Full screen on phones, and it respects `prefers-reduced-motion`.
+- **Dashboard → Website Widget:** brand color, title, position, greeting per language, a live preview that answers with the real agent, one-click key creation with the embed code, and a sample website for testing.
+- **Privacy:** visitors get a reduced event stream, with no uncited passages, relevance scores, tool arguments or results, model name or token counts. Messages are built with DOM APIs, never `innerHTML`, and links are limited to http(s).
+
 ## Security
 
 | Area | How it's protected |
@@ -64,7 +79,7 @@ START ─▶ agent (LLM + tools) ──tool calls?──▶ tools ─▶ agent �
 | Tenant isolation | Every `/tenants/{id}/…` route requires membership and returns **404** to non-members (no existence leak). Roles: owner > admin > member; config changes need admin |
 | Brute force / abuse | Redis rate limits: login per IP and per account, sign-up per IP, widget per key and per visitor, server API per key. **Fails closed** if Redis is down |
 | API keys | `pk_` publishable (chat only, only from listed origins) and `sk_` secret (server-to-server, can't chat). Shown once, SHA-256 stored, revocable, `last_used_at` tracked |
-| Widget conversations | Continuing one needs an HMAC-signed conversation token; dashboard conversations can't be reached from the widget |
+| Widget conversations | Continuing or restoring one needs an HMAC-signed conversation token; dashboard conversations can't be reached from the widget. Public events are stripped of internal data |
 | AI tools | Tools are bound server-side to one tenant/conversation; bookings need confirmation in a later turn; order lookups need matching contact details |
 | Ingestion | SSRF protection (private/loopback IPs blocked, redirects re-checked), PDF magic-byte and size checks |
 | HTTP | Split CORS (dashboard with credentials, `/api/public` without), `nosniff`, `X-Frame-Options: DENY`, `no-store` on auth, no API docs in production, startup refuses insecure production config |
@@ -82,7 +97,9 @@ backend/
   app/models/     SQLAlchemy models (Tenant, Document, Chunk with pgvector)
   migrations/     Alembic migrations
   tests/          pytest suite (uses a separate rehber_test database)
-frontend/         Next.js landing page + admin dashboard (Knowledge page)
+frontend/         Next.js landing page + admin dashboard
+  public/widget.js       the embeddable chat widget (plain JS, no build step)
+  public/widget-test.html  sample website for trying the widget
 docker-compose.yml   Postgres (pgvector) + Redis
 ```
 
@@ -102,7 +119,7 @@ uvicorn app.main:app --reload        # API docs: http://localhost:8000/docs
 
 # 3. Frontend
 cd frontend
-npm run dev                          # http://localhost:3000/dashboard  (Knowledge, Chat Playground, Agent Tools)
+npm run dev                          # http://localhost:3000/dashboard  (Knowledge, Chat Playground, Agent Tools, Website Widget, Settings)
 ```
 
 Tests (one-time setup: `docker exec rehber-db-1 createdb -U rehber rehber_test`):
@@ -115,7 +132,7 @@ Tests (one-time setup: `docker exec rehber-db-1 createdb -U rehber rehber_test`)
 - [x] 3. RAG chat: streaming answers (SSE), citations, language detection, conversation memory, Chat Playground
 - [x] 4. LangGraph agent with tools: availability, two-step booking, order lookup, human hand-off, Agent Tools dashboard
 - [x] 5. Security: accounts (Argon2id), HttpOnly sessions + CSRF, per-business roles, rate limits, widget/server API keys, signed widget conversations
-- [ ] 6. Embeddable chat widget + 8 languages (TR, EN, DE, RU, FR, AR, FA, UR; incl. RTL)
+- [x] 6. Embeddable chat widget + 8 languages (TR, EN, DE, RU, FR, AR, FA, UR; incl. RTL), live preview, sample site
 - [ ] 7. Evaluation set, Langfuse tracing, cost and speed tracking per business
 - [ ] 8. Full admin dashboard
 - [ ] 9. CI (GitHub Actions) and deploy online

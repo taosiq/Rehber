@@ -157,6 +157,15 @@ export type BusinessSettings = {
     services: { name: string; minutes: number }[];
     max_days_ahead: number;
   };
+  widget: WidgetSettings;
+};
+
+export type WidgetSettings = {
+  title: string | null;
+  color: string;
+  position: "right" | "left";
+  greetings: Partial<Record<string, string>>;
+  suggestions: boolean;
 };
 
 export type Appointment = {

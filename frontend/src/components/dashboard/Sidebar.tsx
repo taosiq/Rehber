@@ -5,7 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { BarChart3, Bot, Check, ChevronsUpDown, FileText, LayoutGrid, LogOut, MessagesSquare, Plus, Settings, Wrench } from "lucide-react";
+import { BarChart3, Bot, Check, ChevronsUpDown, FileText, LayoutGrid, LogOut, MessageCircleMore, MessagesSquare, Plus, Settings, Wrench } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { Logo } from "@/components/landing/Logo";
 import { useTenant } from "./TenantContext";
@@ -15,6 +15,7 @@ const nav: { label: string; icon: typeof FileText; href?: string; soon?: boolean
   { label: "Knowledge", icon: FileText, href: "/dashboard" },
   { label: "Chat Playground", icon: Bot, href: "/dashboard/chat" },
   { label: "Agent Tools", icon: Wrench, href: "/dashboard/tools" },
+  { label: "Website Widget", icon: MessageCircleMore, href: "/dashboard/widget" },
   { label: "Conversations", icon: MessagesSquare, soon: true },
   { label: "Analytics", icon: BarChart3, soon: true },
   { label: "Settings", icon: Settings, href: "/dashboard/settings" },
