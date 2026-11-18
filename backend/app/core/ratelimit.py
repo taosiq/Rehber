@@ -5,7 +5,6 @@ than silently allowing unlimited login attempts or AI usage.
 """
 
 import logging
-import time
 
 import redis.asyncio as redis
 from fastapi import HTTPException
@@ -30,16 +29,19 @@ def reset_redis_client() -> None:
 
 
 async def hit(key: str, limit: int, window_s: int) -> tuple[bool, int]:
-    """Count one attempt. Returns (allowed, seconds_until_reset)."""
-    bucket = int(time.time() // window_s)
-    full_key = f"rl:{key}:{bucket}"
+    """Count one attempt. Returns (allowed, seconds_until_reset).
+
+    The window starts at the first attempt (not on clock boundaries), so nobody can send twice the
+    limit by straddling a minute boundary.
+    """
+    full_key = f"rl:{key}"
     r = get_redis()
     async with r.pipeline(transaction=True) as pipe:
+        pipe.set(full_key, 0, ex=window_s, nx=True)
         pipe.incr(full_key)
-        pipe.expire(full_key, window_s + 5)
-        count, _ = await pipe.execute()
-    retry_after = window_s - int(time.time() % window_s)
-    return count <= limit, retry_after
+        pipe.ttl(full_key)
+        _, count, ttl = await pipe.execute()
+    return count <= limit, ttl if ttl and ttl > 0 else window_s
 
 
 async def enforce(key: str, limit: int, window_s: int, message: str = "Too many requests. Please wait and try again.") -> None:
@@ -56,6 +58,7 @@ async def clear(key_prefix: str) -> None:
     """Reset counters for a key (e.g. after a successful login)."""
     try:
         r = get_redis()
+        await r.delete(f"rl:{key_prefix}")
         async for k in r.scan_iter(f"rl:{key_prefix}:*"):
             await r.delete(k)
     except Exception:  # best effort

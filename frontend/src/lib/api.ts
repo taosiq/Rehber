@@ -224,3 +224,72 @@ export const toolsApi = {
   resolve: (tid: string, cid: string) =>
     request<void>(`/tenants/${tid}/conversations/${cid}/resolve`, { method: "POST" }),
 };
+
+// ---------- analytics ----------
+
+export type Totals = {
+  conversations: number;
+  questions: number;
+  answers: number;
+  errors: number;
+  error_rate: number;
+  cited_rate: number;
+  handoffs: number;
+  bookings: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  cost_usd: number;
+  cost_per_answer_usd: number;
+  latency_ms: { avg: number | null; p50: number | null; p95: number | null };
+  first_token_ms: { p50: number | null; p95: number | null };
+};
+
+export type DailyPoint = {
+  date: string;
+  answers: number;
+  conversations: number;
+  errors: number;
+  cost_usd: number;
+  tokens: number;
+  latency_p50: number | null;
+  latency_p95: number | null;
+  first_token_p50: number | null;
+};
+
+export type Analytics = {
+  range: { days: number; from: string; to: string; timezone: string };
+  totals: Totals;
+  previous: Totals;
+  daily: DailyPoint[];
+  languages: { language: string; count: number }[];
+  channels: { channel: string; conversations: number }[];
+  tools: { name: string; calls: number; errors: number }[];
+  models: { model: string; answers: number; cost_usd: number; priced: boolean }[];
+  error_kinds: { kind: string; count: number }[];
+  slowest: { message_id: string; conversation_id: string; latency_ms: number; first_token_ms: number | null;
+    created_at: string; question: string; trace_url: string | null }[];
+  tracing: { enabled: boolean; base_url: string | null };
+};
+
+export type Overview = { days: number; businesses: (Totals & { tenant_id: string; name: string; role: "owner" | "admin" | "member" })[] };
+
+export type EvalReport = {
+  model: string;
+  started_at: string;
+  judge: boolean;
+  summary: {
+    cases: number; passed: number; pass_rate: number;
+    by_tag: Record<string, { passed: number; total: number }>;
+    by_language: Record<string, { passed: number; total: number }>;
+    latency_ms: { p50: number | null; p95: number | null };
+    first_token_ms: { p50: number | null; p95: number | null };
+    tokens: number; cost_usd: number;
+  };
+  cases: { id: string; language: string; tags: string[]; passed: boolean; latency_ms: number | null; failed: string[] }[];
+} | null;
+
+export const analyticsApi = {
+  tenant: (tid: string, days: number) => request<Analytics>(`/tenants/${tid}/analytics?days=${days}`),
+  overview: (days: number) => request<Overview>(`/analytics/overview?days=${days}`),
+  latestEval: () => request<EvalReport>("/evals/latest"),
+};

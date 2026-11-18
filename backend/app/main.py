@@ -5,11 +5,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy import update
 
-from app.api import auth, business, chat, documents, health, keys, public, search, tenants
+from app.api import analytics, auth, business, chat, documents, health, keys, public, search, tenants
 from app.core.config import get_settings
 from app.core.middleware import SecurityHeaders, SplitCORS
 from app.db.session import SessionLocal
 from app.models import Document
+from app.services import tracing
 from app.services.embeddings import get_embedder
 
 settings = get_settings()
@@ -37,6 +38,7 @@ async def lifespan(app: FastAPI):
         if hasattr(embedder, "warm_up"):
             asyncio.get_running_loop().run_in_executor(None, embedder.warm_up)
     yield
+    tracing.flush()  # send any traces still queued
 
 
 is_prod = settings.environment == "production"
@@ -55,5 +57,5 @@ app.add_middleware(SecurityHeaders)
 app.add_middleware(SplitCORS, dashboard_origins=settings.cors_origins)
 
 for r in (health.router, auth.router, tenants.router, documents.router, search.router, chat.router,
-          business.router, keys.router, public.router):
+          business.router, keys.router, public.router, analytics.router):
     app.include_router(r, prefix="/api")

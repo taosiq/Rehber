@@ -26,3 +26,4 @@ lingua-language-detector>=2.0
 langgraph>=1.0
 langchain-groq>=1.0
 argon2-cffi>=23.1
+langfuse>=5.0

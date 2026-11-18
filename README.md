@@ -69,6 +69,21 @@ One line on any website (WordPress, Shopify, Wix, plain HTML):
 - **Dashboard → Website Widget:** brand color, title, position, greeting per language, a live preview that answers with the real agent, one-click key creation with the embed code, and a sample website for testing.
 - **Privacy:** visitors get a reduced event stream, with no uncited passages, relevance scores, tool arguments or results, model name or token counts. Messages are built with DOM APIs, never `innerHTML`, and links are limited to http(s).
 
+## Quality, cost and speed
+
+**Evaluation set** (`backend/evals/dataset.json`): 17 cases on a fictional dental clinic in all 8 languages. They cover grounded answers with citations, prices that must not be invented, out-of-scope questions, prompt injection, availability, two-step booking (with and without confirmation), order lookup with right and wrong contact details, and human hand-off. The checks are deterministic: language of the reply, required/forbidden content, no invented prices, sources cited, tools called, booking actually created, conversation status. Numbers are normalized across scripts (Arabic/Persian digits, `1.500` / `1,500`). An optional LLM judge (`--judge`) grades rubric cases.
+
+```bash
+cd backend && .venv\Scripts\python -m app.evals.run            # writes evals/reports/latest.md
+.venv\Scripts\python -m app.evals.run --only fr-parking --min-pass 0.9
+```
+
+The first run found real problems that are now fixed and covered by tests: French questions full of English-looking words ("parking pour les patients") were answered in English; the model sometimes skipped the booking tool, so customers had to confirm twice; some answers lacked citations. Latest result: [`backend/evals/reports/latest.md`](backend/evals/reports/latest.md).
+
+**Cost and speed per business:** every answer stores tokens, total latency, time to first word and an **estimated cost at list price** (configurable per model; the free tier really costs $0). Failed turns are logged by kind (quota, network, setup). The **Analytics** dashboard shows these per business, with deltas against the previous period: tiles with sparklines, answers and cost per day, p50/p95/first-word response time, languages, channels, tool usage, slowest answers, reliability, a side-by-side table of all your businesses, and the latest evaluation result.
+
+**Langfuse tracing** (optional, free tier): set `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` and every turn becomes a trace. Each trace has the model calls, tools and retrieval, with session = conversation, user = business, and tags for channel and language. Trace ids derive from the message id, so the dashboard links straight to a trace, and evaluation runs attach an `eval_pass` score to each case's trace. **Emails and phone numbers are masked before anything leaves the server.**
+
 ## Security
 
 | Area | How it's protected |
@@ -96,6 +111,8 @@ backend/
   app/services/   extraction, chunking, embeddings, ingestion pipeline, search
   app/models/     SQLAlchemy models (Tenant, Document, Chunk with pgvector)
   migrations/     Alembic migrations
+  app/evals/      evaluation runner and scoring
+  evals/          evaluation dataset and the latest report
   tests/          pytest suite (uses a separate rehber_test database)
 frontend/         Next.js landing page + admin dashboard
   public/widget.js       the embeddable chat widget (plain JS, no build step)
@@ -119,7 +136,7 @@ uvicorn app.main:app --reload        # API docs: http://localhost:8000/docs
 
 # 3. Frontend
 cd frontend
-npm run dev                          # http://localhost:3000/dashboard  (Knowledge, Chat Playground, Agent Tools, Website Widget, Settings)
+npm run dev                          # http://localhost:3000/dashboard  (Knowledge, Chat Playground, Agent Tools, Website Widget, Analytics, Settings)
 ```
 
 Tests (one-time setup: `docker exec rehber-db-1 createdb -U rehber rehber_test`):
@@ -133,7 +150,7 @@ Tests (one-time setup: `docker exec rehber-db-1 createdb -U rehber rehber_test`)
 - [x] 4. LangGraph agent with tools: availability, two-step booking, order lookup, human hand-off, Agent Tools dashboard
 - [x] 5. Security: accounts (Argon2id), HttpOnly sessions + CSRF, per-business roles, rate limits, widget/server API keys, signed widget conversations
 - [x] 6. Embeddable chat widget + 8 languages (TR, EN, DE, RU, FR, AR, FA, UR; incl. RTL), live preview, sample site
-- [ ] 7. Evaluation set, Langfuse tracing, cost and speed tracking per business
+- [x] 7. Evaluation set (17 cases, 8 languages), Langfuse tracing with PII masking, cost/speed/reliability analytics per business
 - [ ] 8. Full admin dashboard
 - [ ] 9. CI (GitHub Actions) and deploy online
 - [ ] 10. WhatsApp channel

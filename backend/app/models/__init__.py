@@ -132,8 +132,23 @@ class Message(TimestampMixin, Base):
     completion_tokens: Mapped[int | None] = mapped_column(Integer)
     latency_ms: Mapped[int | None] = mapped_column(Integer)  # total time to full answer
     first_token_ms: Mapped[int | None] = mapped_column(Integer)  # time to first streamed word
+    cost_usd: Mapped[Decimal | None] = mapped_column(Numeric(14, 8))  # estimated at list price when answered
+    trace_id: Mapped[str | None] = mapped_column(String(64))  # Langfuse trace, when tracing is on
 
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
+
+    __table_args__ = (Index("ix_messages_tenant_created", "tenant_id", "created_at"),)
+
+
+class AgentError(TimestampMixin, Base):
+    """A turn that failed (AI quota, network, bug). Counted in the reliability numbers."""
+
+    __tablename__ = "agent_errors"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
+    conversation_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("conversations.id", ondelete="SET NULL"))
+    kind: Mapped[str] = mapped_column(String(30))  # rate_limit | connection | config | other
+    detail: Mapped[str] = mapped_column(String(500))
 
 
 class Appointment(TimestampMixin, Base):
