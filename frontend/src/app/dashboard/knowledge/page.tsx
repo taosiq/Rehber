@@ -129,7 +129,7 @@ export default function KnowledgePage() {
         <Stat icon={Building2} label="Ready" value={ready.length} i={2} />
       </div>
 
-      <div className="mt-8 grid gap-8 xl:grid-cols-[1.25fr_1fr]">
+      <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
         <section className="flex flex-col gap-6">
           <UploadPanel
             onFiles={async (files) => { for (const f of files) await guard(() => api.uploadPdf(current.id, f)); }}

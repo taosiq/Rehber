@@ -131,7 +131,7 @@ function BusinessTab() {
   };
 
   return (
-    <div className="grid items-start gap-8 xl:grid-cols-[1.2fr_1fr]">
+    <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
       <Card title="Business details" icon={Building2}>
         <form onSubmit={save} className="flex flex-col gap-4">
           <label className="flex flex-col gap-2 text-sm text-muted">Business name

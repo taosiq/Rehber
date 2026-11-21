@@ -52,7 +52,7 @@ function Card({ title, icon: Icon, children, action, i = 0 }: {
       transition={{ delay: 0.05 + i * 0.06 }}
       className="rounded-3xl border border-line bg-card p-6 backdrop-blur-xl"
     >
-      <div className="mb-5 flex items-center justify-between gap-3">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-xl font-medium"><Icon size={18} className="text-accent" />{title}</h2>
         {action}
       </div>
@@ -178,7 +178,7 @@ export default function ToolsPage() {
         })}
       </div>
 
-      <div className="mt-8 grid gap-8 xl:grid-cols-2">
+      <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 xl:grid-cols-2">
         <div className="flex flex-col gap-8">
           <Card title="Opening hours" icon={Clock} i={1}
             action={<input value={settings.timezone} onChange={(e) => update((s) => ({ ...s, timezone: e.target.value }))} className={clsx(inputCls, "w-48 font-mono text-xs")} title="Timezone" />}>
@@ -187,8 +187,8 @@ export default function ToolsPage() {
                 const span = settings.booking.hours[d.key];
                 const [from, to] = span ? span.split("-") : ["09:00", "18:00"];
                 return (
-                  <div key={d.key} className="flex items-center gap-3">
-                    <span className="w-28 text-sm">{d.label}</span>
+                  <div key={d.key} className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                    <span className="w-24 text-sm sm:w-28">{d.label}</span>
                     <Switch on={!!span} onChange={(v) => update((s) => { s.booking.hours[d.key] = v ? "09:00-18:00" : null; return s; })} />
                     {span ? (
                       <div className="flex items-center gap-2">
@@ -223,12 +223,12 @@ export default function ToolsPage() {
               <AnimatePresence initial={false}>
                 {settings.booking.services.map((svc, i) => (
                   <motion.div key={i} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="flex items-center gap-2">
-                    <input value={svc.name} onChange={(e) => update((s) => { s.booking.services[i].name = e.target.value; return s; })} className={clsx(inputCls, "flex-1")} />
+                    <input value={svc.name} onChange={(e) => update((s) => { s.booking.services[i].name = e.target.value; return s; })} className={clsx(inputCls, "min-w-0 flex-1")} />
                     <input type="number" min={5} max={480} value={svc.minutes}
                       onChange={(e) => update((s) => { s.booking.services[i].minutes = Number(e.target.value) || 30; return s; })}
                       className={clsx(inputCls, "w-20")} />
                     <span className="text-xs text-muted">min</span>
-                    <button onClick={() => update((s) => { s.booking.services.splice(i, 1); return s; })} className="grid h-9 w-9 place-items-center rounded-lg text-muted hover:bg-white/10 hover:text-red-300" aria-label="Remove service">
+                    <button onClick={() => update((s) => { s.booking.services.splice(i, 1); return s; })} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted hover:bg-white/10 hover:text-red-300" aria-label="Remove service">
                       <Trash2 size={15} />
                     </button>
                   </motion.div>

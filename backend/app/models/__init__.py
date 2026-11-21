@@ -113,10 +113,15 @@ class Conversation(TimestampMixin, Base):
     assigned_to: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     last_message_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     staff_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Messaging channels: who the customer is on that channel (WhatsApp: their wa_id, e.g. "905321234567").
+    external_user: Mapped[str | None] = mapped_column(String(64))
+    customer_name: Mapped[str | None] = mapped_column(String(200))  # their WhatsApp profile name
 
     messages: Mapped[list["Message"]] = relationship(
         back_populates="conversation", cascade="all, delete-orphan", order_by="Message.created_at"
     )
+
+    __table_args__ = (Index("ix_conversations_external", "tenant_id", "channel", "external_user"),)
 
 
 class Message(TimestampMixin, Base):
@@ -141,10 +146,17 @@ class Message(TimestampMixin, Base):
     first_token_ms: Mapped[int | None] = mapped_column(Integer)  # time to first streamed word
     cost_usd: Mapped[Decimal | None] = mapped_column(Numeric(14, 8))  # estimated at list price when answered
     trace_id: Mapped[str | None] = mapped_column(String(64))  # Langfuse trace, when tracing is on
+    # The channel's own message id (WhatsApp "wamid..."). Unique, so a webhook Meta retries is answered once.
+    external_id: Mapped[str | None] = mapped_column(String(128))
+    delivery: Mapped[str | None] = mapped_column(String(20))  # outgoing on WhatsApp: sent|delivered|read|failed
 
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
 
-    __table_args__ = (Index("ix_messages_tenant_created", "tenant_id", "created_at"),)
+    __table_args__ = (
+        Index("ix_messages_tenant_created", "tenant_id", "created_at"),
+        Index("uq_messages_external", "tenant_id", "external_id", unique=True,
+              postgresql_where=text("external_id IS NOT NULL")),
+    )
 
 
 class AgentError(TimestampMixin, Base):
@@ -261,6 +273,24 @@ class ApiKey(TimestampMixin, Base):
     created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class WhatsAppAccount(TimestampMixin, Base):
+    """A business's connected WhatsApp number (Meta WhatsApp Cloud API). One per business."""
+
+    __tablename__ = "whatsapp_accounts"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), unique=True)
+    # Webhooks name the number they arrived on; that is how a message finds its business.
+    phone_number_id: Mapped[str] = mapped_column(String(32), unique=True)
+    waba_id: Mapped[str | None] = mapped_column(String(32))  # WhatsApp Business Account
+    display_phone_number: Mapped[str | None] = mapped_column(String(40))
+    verified_name: Mapped[str | None] = mapped_column(String(200))
+    token_encrypted: Mapped[str] = mapped_column(Text)  # Fernet, see app/core/crypto.py
+    connected_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    last_inbound_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(String(500))
+    last_error_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Invitation(TimestampMixin, Base):

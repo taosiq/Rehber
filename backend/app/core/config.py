@@ -80,6 +80,15 @@ class Settings(BaseSettings):
     email_from: str = ""  # a sender address verified in Brevo, e.g. you@gmail.com
     email_from_name: str = "Rehber"
 
+    # --- WhatsApp (Meta WhatsApp Cloud API, free test number) ---
+    # One Meta app for the whole platform: its App Secret checks that webhook calls really come from
+    # Meta, and the verify token is typed into Meta once when the webhook is set up. Each business then
+    # connects its own number (phone number ID + access token) from the dashboard.
+    whatsapp_app_secret: str = ""
+    whatsapp_verify_token: str = ""
+    whatsapp_graph_url: str = "https://graph.facebook.com"
+    whatsapp_graph_version: str = "v25.0"
+
     def check_production_safety(self) -> None:
         """Refuse to start in production with development defaults."""
         if self.environment == "production":

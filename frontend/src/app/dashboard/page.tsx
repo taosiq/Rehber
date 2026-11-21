@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useTenant } from "@/components/dashboard/TenantContext";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { ColumnChart, SERIES } from "@/components/analytics/charts";
 import { analyticsApi, overviewApi, type Analytics, type OverviewData } from "@/lib/api";
 import { CHANNEL_NAMES, LANG_NAMES, timeAgo } from "@/lib/format";
@@ -18,12 +19,14 @@ function greeting(hour: number) {
   return hour < 5 ? "Good night" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 }
 
-const STEPS: { key: keyof OverviewData["setup"]; title: string; body: string; href: string; icon: typeof FileText; optional?: boolean }[] = [
+const STEPS: { key: keyof OverviewData["setup"]; title: string; body: string; href: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>; optional?: boolean }[] = [
   { key: "documents", title: "Add your knowledge", body: "Upload PDFs, web pages or text about your business.", href: "/dashboard/knowledge", icon: FileText },
   { key: "tools", title: "Set hours and tools", body: "Opening hours, services, and what the agent may do.", href: "/dashboard/tools", icon: Wrench },
   { key: "tested", title: "Try the agent", body: "Ask it a few questions in the Chat Playground.", href: "/dashboard/chat", icon: Bot },
   { key: "widget_key", title: "Get the website code", body: "Style the chat bubble and create a widget key.", href: "/dashboard/widget", icon: KeyRound },
   { key: "widget_live", title: "First website visitor", body: "Paste the code on your site; the first chat ticks this.", href: "/dashboard/widget", icon: Globe },
+  { key: "whatsapp", title: "Connect WhatsApp", body: "Answer customers on WhatsApp too, in their language.", href: "/dashboard/whatsapp", icon: WhatsAppIcon, optional: true },
   { key: "team", title: "Invite your team", body: "So colleagues can answer when a human is needed.", href: "/dashboard/team", icon: Users, optional: true },
   { key: "tracing", title: "Turn on tracing", body: "Optional: see every step of every answer in Langfuse.", href: "/dashboard/analytics", icon: Radar, optional: true },
 ];
@@ -102,12 +105,12 @@ export default function OverviewPage() {
             ))}
           </div>
 
-          <div className="grid gap-8 xl:grid-cols-[1.25fr_1fr]">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-8 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
             <Recent o={o} />
             <Setup o={o} />
           </div>
 
-          <div className="grid gap-8 xl:grid-cols-[1.25fr_1fr]">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-8 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
             <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
               className="rounded-3xl border border-line bg-card p-6 backdrop-blur-xl">
               <div className="mb-4 flex items-center justify-between">

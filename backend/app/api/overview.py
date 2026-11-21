@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.chat import _summaries
 from app.db.session import get_db
-from app.models import ApiKey, Appointment, Conversation, Document, Membership, Message, Tenant
+from app.models import ApiKey, Appointment, Conversation, Document, Membership, Message, Tenant, WhatsAppAccount
 from app.api.deps import get_tenant
 from app.services import tracing
 from app.services.business import load_settings
@@ -36,6 +36,7 @@ async def overview(tenant: Tenant = Depends(get_tenant), db: AsyncSession = Depe
         Conversation.tenant_id == tid, Conversation.channel == "widget"))
     any_convos = await count(select(func.count()).select_from(Conversation).where(Conversation.tenant_id == tid))
     team = await count(select(func.count()).select_from(Membership).where(Membership.tenant_id == tid))
+    whatsapp = await count(select(func.count()).select_from(WhatsAppAccount).where(WhatsAppAccount.tenant_id == tid))
 
     today = {
         "conversations": await count(select(func.count(func.distinct(Message.conversation_id))).where(
@@ -67,6 +68,7 @@ async def overview(tenant: Tenant = Depends(get_tenant), db: AsyncSession = Depe
             "widget_key": widget_keys > 0,
             "widget_live": widget_convos > 0,
             "team": team > 1,
+            "whatsapp": whatsapp > 0,
             "tracing": tracing.enabled(),
         },
         "today": today,

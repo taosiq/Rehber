@@ -4,9 +4,10 @@ import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import {
-  ArrowLeft, Bot, CheckCheck, CircleCheck, Globe2, Hand, Inbox, Loader2, MessageCircleMore, PauseCircle, PlayCircle,
+  ArrowLeft, Bot, CheckCheck, CircleCheck, Clock3, Globe2, Hand, Inbox, Loader2, MessageCircleMore, PauseCircle, PlayCircle,
   Search, Send, UserRound, X,
 } from "lucide-react";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useTenant } from "@/components/dashboard/TenantContext";
 import { MessageBubble, type UiMessage } from "@/components/dashboard/chat/MessageBubble";
@@ -25,8 +26,19 @@ const inboxChanged = () => window.dispatchEvent(new Event("rehber:inbox-changed"
 function toUi(m: StoredMessage): UiMessage {
   return {
     key: m.id, role: m.role, author: m.author_name, content: m.content, language: m.language,
-    sources: m.sources ?? [], tools: m.tool_calls ?? undefined,
+    sources: m.sources ?? [], tools: m.tool_calls ?? undefined, delivery: m.delivery,
   };
+}
+
+/** WhatsApp shows the profile name; the number is in customer_contact. */
+const customerLabel = (c: ConversationSummary) => c.customer_name || c.customer_contact || c.title || "Visitor";
+
+function windowLeft(iso: string | null | undefined, now: number): { open: boolean; text: string } {
+  if (!iso) return { open: false, text: "" };
+  const ms = new Date(iso).getTime() - now;
+  if (ms <= 0) return { open: false, text: "" };
+  const h = Math.floor(ms / 3_600_000), m = Math.floor((ms % 3_600_000) / 60_000);
+  return { open: true, text: h > 0 ? `${h} h ${m} min` : `${m} min` };
 }
 
 export default function ConversationsPage() {
@@ -43,10 +55,11 @@ export default function ConversationsPage() {
   // Deep links: ?c=<id> opens a conversation, ?status=handoff picks a filter.
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
-    const c = p.get("c"), s = p.get("status");
+    const c = p.get("c"), s = p.get("status"), ch = p.get("channel");
     Promise.resolve().then(() => {
       if (c) setSelected(c);
       if (s && FILTERS.some((f) => f.key === s)) setFilter(s as Filter);
+      if (ch && ["widget", "whatsapp", "playground"].includes(ch)) setChannel(ch);
     });
   }, []);
 
@@ -90,6 +103,7 @@ export default function ConversationsPage() {
               className="rounded-lg border border-line bg-[#111118] px-2.5 py-1.5 text-sm text-muted outline-none focus:border-accent">
               <option value="">All channels</option>
               <option value="widget">Website</option>
+              <option value="whatsapp">WhatsApp</option>
               <option value="playground">Playground</option>
             </select>
           </div>
@@ -141,7 +155,7 @@ export default function ConversationsPage() {
                   animate={{ scale: [1, 1.25, 1] }} transition={{ duration: 2, repeat: Infinity }} />
               </div>
               <h2 className="mt-5 text-2xl font-medium">Pick a conversation</h2>
-              <p className="mt-2 max-w-sm text-muted">Read what customers asked, take over from the AI, and reply as a person. Your reply appears live in the website chat.</p>
+              <p className="mt-2 max-w-sm text-muted">Read what customers asked, take over from the AI, and reply as a person. Your reply appears live in the website chat or on the customer&apos;s WhatsApp.</p>
             </motion.div>
           </div>
         )}
@@ -151,15 +165,22 @@ export default function ConversationsPage() {
 }
 
 function Row({ c, active, onClick }: { c: ConversationSummary; active: boolean; onClick: () => void }) {
-  const who = c.customer_contact || c.title || "Visitor";
+  const who = customerLabel(c);
+  const isWa = c.channel === "whatsapp";
+  const letters = (c.customer_name || c.customer_contact || "").replace(/[^\p{L}\s]/gu, " ").trim();
   return (
     <motion.li layout initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
       <button onClick={onClick}
         className={clsx("relative flex w-full gap-3 rounded-2xl p-3 text-start transition-colors", active ? "bg-white/[0.07]" : "hover:bg-white/[0.035]")}>
         {active && <motion.span layoutId="row-active" className="absolute inset-y-3 start-0 w-1 rounded-full bg-accent" />}
         <span className={clsx("relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-sm font-semibold",
-          c.channel === "widget" ? "bg-cyan/15 text-cyan" : "bg-violet/15 text-violet")}>
-          {c.customer_contact ? initials(c.customer_contact.replace(/[^\p{L}\s]/gu, " ")) : c.channel === "widget" ? <Globe2 size={18} /> : <Bot size={18} />}
+          isWa ? "bg-emerald-400/15 text-emerald-300" : c.channel === "widget" ? "bg-cyan/15 text-cyan" : "bg-violet/15 text-violet")}>
+          {letters ? initials(letters) : isWa ? <WhatsAppIcon size={19} /> : c.channel === "widget" ? <Globe2 size={18} /> : <Bot size={18} />}
+          {isWa && letters && (
+            <span className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-emerald-400 text-black ring-2 ring-[#09090f]">
+              <WhatsAppIcon size={11} />
+            </span>
+          )}
           {c.status === "handoff" && <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-accent text-black"><Hand size={11} /></span>}
         </span>
         <span className="min-w-0 flex-1">
@@ -272,10 +293,19 @@ function Thread({ tid, cid, onBack, onChanged }: { tid: string; cid: string; onB
   };
 
   const ui = useMemo(() => (messages ?? []).map(toUi), [messages]);
+  // Re-render every 30 s so the WhatsApp reply-window countdown stays current.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, []);
   if (!convo || !messages) {
     return <div className="grid h-full place-items-center text-muted">{error ?? <Loader2 className="animate-spin" />}</div>;
   }
   const isWidget = convo.channel === "widget";
+  const isWa = convo.channel === "whatsapp";
+  const win = windowLeft(convo.reply_window_ends_at, now);
+  const locked = isWa && !win.open;
 
   return (
     <div className="flex h-full">
@@ -284,8 +314,12 @@ function Thread({ tid, cid, onBack, onChanged }: { tid: string; cid: string; onB
         <div className="flex items-center gap-3 border-b border-line px-5 py-4">
           <button onClick={onBack} className="grid h-9 w-9 place-items-center rounded-lg hover:bg-white/5 md:hidden" aria-label="Back"><ArrowLeft size={18} /></button>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-lg font-medium" dir="auto">{convo.customer_contact || convo.title || "Visitor"}</h2>
+            <h2 className="flex items-center gap-2 truncate text-lg font-medium" dir="auto">
+              {isWa && <WhatsAppIcon size={18} className="shrink-0 text-emerald-300" />}
+              <span className="truncate">{customerLabel(convo)}</span>
+            </h2>
             <p className="truncate text-sm text-muted">
+              {isWa && convo.customer_name && convo.customer_contact ? <span className="font-mono">{convo.customer_contact} · </span> : null}
               {CHANNEL_NAMES[convo.channel] ?? convo.channel}{convo.language ? ` · ${LANG_NAMES[convo.language] ?? convo.language}` : ""} · started {timeAgo(convo.created_at)}
             </p>
           </div>
@@ -326,16 +360,27 @@ function Thread({ tid, cid, onBack, onChanged }: { tid: string; cid: string; onB
                 className={clsx("mb-2 flex items-center gap-2 text-xs", convo.ai_paused ? "text-emerald-300" : "text-muted")}>
                 {convo.ai_paused ? <><UserRound size={13} /> {convo.assigned_to?.name ?? "Your team"} is handling this. The AI is paused.</>
                   : <><Bot size={13} /> The AI is answering. Sending a reply takes over the conversation.</>}
-                {!isWidget && <span className="text-muted">· Playground chat: replies show only here.</span>}
+                {!isWidget && !isWa && <span className="text-muted">· Playground chat: replies show only here.</span>}
+                {isWa && win.open && <span className="ms-auto inline-flex items-center gap-1.5 text-emerald-300/80"><WhatsAppIcon size={13} /> Sent to their WhatsApp · {win.text} left to reply</span>}
               </motion.p>
             </AnimatePresence>
             {error && <p className="mb-2 text-sm text-red-300">{error}</p>}
-            <div className="flex items-end gap-2 rounded-2xl border border-line bg-white/[0.03] p-2 transition-colors focus-within:border-emerald-400/50">
-              <textarea value={text} onChange={(e) => setText(e.target.value)} rows={1} maxLength={4000} dir="auto"
+            <AnimatePresence>
+              {locked && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                  <p className="mb-2 flex items-start gap-2 rounded-xl border border-amber-300/25 bg-amber-300/[0.07] px-3.5 py-2.5 text-sm text-amber-100">
+                    <Clock3 size={16} className="mt-0.5 shrink-0 text-amber-300" />
+                    WhatsApp only lets businesses reply within 24 hours of the customer&apos;s last message. When they write again, you can answer here.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <div className={clsx("flex items-end gap-2 rounded-2xl border border-line bg-white/[0.03] p-2 transition-colors focus-within:border-emerald-400/50", locked && "opacity-50")}>
+              <textarea value={text} onChange={(e) => setText(e.target.value)} rows={1} maxLength={4000} dir="auto" disabled={locked}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }}
-                placeholder={`Reply as ${me.name.split(" ")[0]}…`}
+                placeholder={locked ? "Reply window closed" : `Reply as ${me.name.split(" ")[0]}…`}
                 className="max-h-40 min-h-[44px] flex-1 resize-none bg-transparent px-3 py-2.5 text-base outline-none [field-sizing:content]" />
-              <motion.button whileTap={{ scale: 0.92 }} onClick={send} disabled={!text.trim() || sending} aria-label="Send reply"
+              <motion.button whileTap={{ scale: 0.92 }} onClick={send} disabled={!text.trim() || sending || locked} aria-label="Send reply"
                 className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-emerald-400 text-black transition-opacity disabled:opacity-30">
                 {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
               </motion.button>
@@ -349,7 +394,8 @@ function Thread({ tid, cid, onBack, onChanged }: { tid: string; cid: string; onB
         <h3 className="text-sm uppercase tracking-wider text-muted">Details</h3>
         <dl className="mt-4 flex flex-col gap-4 text-sm">
           {[
-            ["Customer", convo.customer_contact ?? "Not shared"],
+            ...(convo.customer_name ? [["Name", convo.customer_name]] : []),
+            [isWa ? "WhatsApp number" : "Customer", convo.customer_contact ?? "Not shared"],
             ["Channel", CHANNEL_NAMES[convo.channel] ?? convo.channel],
             ["Language", convo.language ? LANG_NAMES[convo.language] ?? convo.language : "—"],
             ["Status", convo.status === "handoff" ? "Needs human" : convo.status === "resolved" ? "Resolved" : "AI handling"],

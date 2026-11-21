@@ -11,10 +11,11 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { Logo } from "@/components/landing/Logo";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { inboxApi, type InboxCounts } from "@/lib/api";
 import { useTenant } from "./TenantContext";
 
-type NavItem = { label: string; icon: typeof FileText; href: string; badge?: "inbox" };
+type NavItem = { label: string; icon: React.ComponentType<{ size?: number; className?: string }>; href: string; badge?: "inbox" };
 const nav: NavItem[] = [
   { label: "Overview", icon: LayoutGrid, href: "/dashboard" },
   { label: "Conversations", icon: Inbox, href: "/dashboard/conversations", badge: "inbox" },
@@ -22,6 +23,7 @@ const nav: NavItem[] = [
   { label: "Chat Playground", icon: Bot, href: "/dashboard/chat" },
   { label: "Agent Tools", icon: Wrench, href: "/dashboard/tools" },
   { label: "Website Widget", icon: MessageCircleMore, href: "/dashboard/widget" },
+  { label: "WhatsApp", icon: WhatsAppIcon, href: "/dashboard/whatsapp" },
   { label: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
   { label: "Team", icon: Users, href: "/dashboard/team" },
   { label: "Settings", icon: Settings, href: "/dashboard/settings" },

@@ -3,8 +3,8 @@
 import { AnimatePresence, motion } from "motion/react";
 import { Fragment, useState } from "react";
 import clsx from "clsx";
-import { Clock, FileText, Globe, Type, Zap } from "lucide-react";
-import { isRtlText, RTL_LANGS, type ChatSource, type ChatStats, type ToolCall } from "@/lib/chat";
+import { AlertCircle, Check, CheckCheck, Clock, FileText, Globe, Type, Zap } from "lucide-react";
+import { isRtlText, RTL_LANGS, type ChatSource, type ChatStats, type Delivery, type ToolCall } from "@/lib/chat";
 import { ToolCard } from "./ToolCard";
 
 export type UiMessage = {
@@ -19,7 +19,32 @@ export type UiMessage = {
   tools?: ToolCall[];
   streaming?: boolean;
   error?: string;
+  delivery?: Delivery | null; // WhatsApp ticks
 };
+
+const TICKS: Record<Delivery, { label: string; cls: string }> = {
+  sent: { label: "Sent", cls: "text-muted" },
+  delivered: { label: "Delivered", cls: "text-muted" },
+  read: { label: "Read", cls: "text-cyan" },
+  failed: { label: "Not delivered", cls: "text-red-300" },
+};
+
+/** WhatsApp-style ticks: ✓ sent, ✓✓ delivered, blue ✓✓ read. They pop in as the status changes. */
+function DeliveryTicks({ delivery }: { delivery: Delivery }) {
+  const t = TICKS[delivery];
+  const Icon = delivery === "failed" ? AlertCircle : delivery === "sent" ? Check : CheckCheck;
+  return (
+    <span className={clsx("inline-flex items-center gap-1 font-mono text-[11px]", t.cls)} title={`WhatsApp: ${t.label}`}>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span key={delivery} initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.4, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 500, damping: 24 }} className="inline-flex">
+          <Icon size={13} />
+        </motion.span>
+      </AnimatePresence>
+      {t.label}
+    </span>
+  );
+}
 
 const LANG_LABEL: Record<string, string> = {
   en: "English", tr: "Türkçe", de: "Deutsch", ru: "Русский", fr: "Français", ar: "العربية", fa: "فارسی", ur: "اردو",
@@ -181,6 +206,7 @@ export function MessageBubble({ msg }: { msg: UiMessage }) {
           {msg.streaming && msg.content && <span className="ms-0.5 inline-block h-4 w-[2px] translate-y-0.5 animate-pulse bg-accent" />}
         </div>
         )}
+        {msg.delivery && <div className="mt-1.5 flex justify-end pe-1"><DeliveryTicks delivery={msg.delivery} /></div>}
 
         {/* Expanded source passage */}
         <AnimatePresence>

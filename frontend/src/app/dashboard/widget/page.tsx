@@ -265,7 +265,7 @@ export default function WidgetPage() {
       {!settings || !widget || !previewConfig ? (
         <div className="mt-16 grid place-items-center text-muted"><Loader2 className="animate-spin" /></div>
       ) : (
-        <div className="mt-8 grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+        <div className="mt-8 grid grid-cols-[minmax(0,1fr)] items-start gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
           {/* ---------------- settings column */}
           <div className="flex flex-col gap-8">
             <Card title="Appearance" icon={Palette}>

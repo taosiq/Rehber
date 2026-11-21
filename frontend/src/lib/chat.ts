@@ -40,8 +40,10 @@ export type ConversationSummary = {
   handoff_reason: string | null;
   handoff_at: string | null;
   customer_contact: string | null;
+  customer_name?: string | null; // WhatsApp profile name
   language: string | null;
   message_count: number;
+  reply_window_ends_at?: string | null; // WhatsApp: free-form replies allowed until then
   unread: boolean;
   last_message: { role: "user" | "assistant" | "staff"; preview: string; at: string } | null;
   last_message_at: string | null;
@@ -62,7 +64,10 @@ export type StoredMessage = {
   completion_tokens: number | null;
   latency_ms: number | null;
   first_token_ms: number | null;
+  delivery?: Delivery | null;
 };
+
+export type Delivery = "sent" | "delivered" | "read" | "failed";
 
 type Handlers = {
   onMeta?: (d: { conversation_id: string; language: string | null; sources: ChatSource[] }) => void;

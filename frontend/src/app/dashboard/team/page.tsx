@@ -83,7 +83,7 @@ export default function TeamPage() {
         )}
       </AnimatePresence>
 
-      <div className="mt-8 grid items-start gap-8 xl:grid-cols-[1.4fr_1fr]">
+      <div className="mt-8 grid grid-cols-[minmax(0,1fr)] items-start gap-8 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Card title={`Members${members ? ` (${members.length})` : ""}`} icon={Users}>
           {!members ? <Loader2 className="animate-spin text-muted" /> : (
             <ul className="flex flex-col gap-2">

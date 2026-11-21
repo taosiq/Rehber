@@ -79,9 +79,10 @@ def _friendly_error(exc: Exception) -> str:
 
 async def run_turn(
     db: AsyncSession, tenant: Tenant, question: str, conversation_id: uuid.UUID | None, channel: str = "playground",
-    language_hint: str | None = None,
+    language_hint: str | None = None, external_id: str | None = None,
 ) -> AsyncIterator[dict]:
-    """`language_hint` (e.g. the widget's UI language) is only used when the text itself is unclear."""
+    """`language_hint` (e.g. the widget's UI language) is only used when the text itself is unclear.
+    `external_id` is the channel's id for the customer's message (WhatsApp), stored to make delivery idempotent."""
     cfg = get_settings()
     started = time.perf_counter()
     biz = load_settings(tenant.settings)
@@ -111,7 +112,8 @@ async def run_turn(
 
     prev_lang = next((m.language for m in reversed(history) if m.role == "user" and m.language), None)
     language = detect_language(question, fallback=prev_lang or language_hint)
-    user_msg = Message(tenant_id=tenant.id, conversation_id=convo.id, role="user", content=question, language=language)
+    user_msg = Message(tenant_id=tenant.id, conversation_id=convo.id, role="user", content=question, language=language,
+                       external_id=external_id)
     db.add(user_msg)
     convo.last_message_at = datetime.now(ZoneInfo("UTC"))
     if convo.status == "resolved":
@@ -139,7 +141,9 @@ async def run_turn(
                        "sources": [s.to_dict() for s in initial]})
 
     now_local = datetime.now(ZoneInfo(biz.timezone))
-    messages = [SystemMessage(build_system_prompt(tenant.name, biz, now_local, language, initial))]
+    phone = f"+{convo.external_user}" if convo.channel == "whatsapp" and convo.external_user else None
+    messages = [SystemMessage(build_system_prompt(tenant.name, biz, now_local, language, initial,
+                                                  channel=convo.channel, customer_phone=phone))]
     messages += [HumanMessage(m.content) if m.role == "user" else AIMessage(m.content) for m in history]
     messages.append(HumanMessage(question))
 

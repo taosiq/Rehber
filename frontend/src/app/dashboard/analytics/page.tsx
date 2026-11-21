@@ -179,7 +179,7 @@ export default function AnalyticsPage() {
               </Section>
             </div>
 
-            <div className="grid gap-8 xl:grid-cols-[1.3fr_1fr]">
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-8 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
               <Section title="Estimated cost per day" icon={CircleDollarSign} i={3}
                 action={<span className="text-sm text-muted">{(a.totals.prompt_tokens + a.totals.completion_tokens).toLocaleString()} tokens in {days} days</span>}>
                 <ColumnChart label="Estimated cost per day" color={SERIES.violet} format={fmtUsd} height={200}
@@ -205,7 +205,7 @@ export default function AnalyticsPage() {
               </Section>
             </div>
 
-            <div className="grid gap-8 xl:grid-cols-[1.6fr_1fr]">
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-8 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
               <Slowest a={a} />
               <Reliability a={a} />
             </div>

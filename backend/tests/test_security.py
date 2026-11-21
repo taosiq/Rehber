@@ -39,7 +39,9 @@ async def make_biz(c, name="Biz"):
 
 PUBLIC = {("GET", "/api/health"), ("GET", "/api/health/db"), ("POST", "/api/auth/signup"), ("POST", "/api/auth/login"),
           ("GET", "/api/invitations/{token}"),  # invite preview: the secret token is the permission
-          ("POST", "/api/auth/forgot"), ("POST", "/api/auth/reset")}  # password reset: answer is the same for everyone
+          ("POST", "/api/auth/forgot"), ("POST", "/api/auth/reset"),  # password reset: answer is the same for everyone
+          # Meta's webhook: GET needs the verify token, POST needs Meta's HMAC signature (tested in test_whatsapp).
+          ("GET", "/api/whatsapp/webhook"), ("POST", "/api/whatsapp/webhook")}
 
 
 async def test_every_non_public_route_requires_authentication(anon_client):

@@ -68,13 +68,24 @@ def _tool_rules(settings: BusinessSettings) -> str:
     return "\n\n".join(parts)
 
 
+def _channel_rule(channel: str, customer_phone: str | None) -> str:
+    if channel != "whatsapp":
+        return ""
+    known = (f" You already know their phone number from WhatsApp: {customer_phone}. Use it for bookings and "
+             "hand-offs instead of asking for one (just mention that you'll use this number)." if customer_phone else "")
+    return ("\n\nCHANNEL: This chat is on WhatsApp, read on a phone. Keep answers short (a few sentences, at most "
+            "about 120 words). Plain text only: no tables, no headings, no links in markdown form. Lists are fine "
+            "with simple dashes." + known)
+
+
 def build_system_prompt(
-    business: str, settings: BusinessSettings, now_local: datetime, language: str | None, sources: list[Source]
+    business: str, settings: BusinessSettings, now_local: datetime, language: str | None, sources: list[Source],
+    channel: str = "playground", customer_phone: str | None = None,
 ) -> str:
     return f"""You are the customer support assistant for "{business}".
 Current local time: {now_local.strftime("%A %Y-%m-%d %H:%M")} ({settings.timezone}).
 
-LANGUAGE: {_language_rule(language)}
+LANGUAGE: {_language_rule(language)}{_channel_rule(channel, customer_phone)}
 
 FACTS: Answer questions about the business using ONLY the numbered sources and tool results. After each fact from a source, cite its number in plain square brackets like [1] or [2][3], in every language. When a fact (such as opening hours) is in a source, cite that source even if you also know it from these instructions. If the information isn't available, say so honestly and offer help from the team. Never invent prices, times, policies, order details or availability. Be exact with times and numbers: don't stretch them (closing at 14:00 means not open after 14:00).
 

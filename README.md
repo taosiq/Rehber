@@ -5,7 +5,7 @@ AI support agent platform. A business uploads its documents (PDFs, website pages
 - answers from those documents (RAG) and cites its sources
 - uses tools: books appointments, checks orders, hands over to a human
 - answers in 8 languages: Turkish, English, German, Russian, French, Arabic, Persian, Urdu
-- runs as a website chat widget, and later on WhatsApp
+- runs as a website chat widget and on WhatsApp
 
 **Stack:** Python, FastAPI, LangGraph, PostgreSQL + pgvector, Redis, local multilingual embeddings (EmbeddingGemma via fastembed/ONNX), Groq-hosted gpt-oss-120b for chat (free tier; provider is swappable), Next.js dashboard, Docker, GitHub Actions.
 
@@ -69,6 +69,32 @@ One line on any website (WordPress, Shopify, Wix, plain HTML):
 - **Dashboard → Website Widget:** brand color, title, position, greeting per language, a live preview that answers with the real agent, one-click key creation with the embed code, and a sample website for testing.
 - **Privacy:** visitors get a reduced event stream, with no uncited passages, relevance scores, tool arguments or results, model name or token counts. Messages are built with DOM APIs, never `innerHTML`, and links are limited to http(s).
 
+## WhatsApp
+
+Customers message the business's WhatsApp number and the same agent answers: same knowledge, citations, bookings, order lookups, hand-offs and 8 languages. It uses Meta's official **WhatsApp Cloud API**, which has a free test number.
+
+- **One webhook for the whole platform:** `POST /api/whatsapp/webhook`. Each message names the number it arrived on (`phone_number_id`), and that is how it finds its business.
+- **Verified:** every webhook call must carry Meta's `X-Hub-Signature-256` (HMAC-SHA256 of the raw body with the App Secret). Unsigned or forged calls are refused. The setup handshake (`GET`) needs the verify token.
+- **Answers fast:** Meta gets its 200 right away and the agent answers in the background. The customer sees blue ticks and "typing…" while it writes.
+- **Formatted for phones:** markdown becomes WhatsApp formatting (`*bold*`), citation markers are removed, and cited web pages are listed as links. Long answers are split at paragraph boundaries. The agent is told it's on WhatsApp, keeps answers short, and uses the customer's WhatsApp number for bookings instead of asking for it.
+- **Exactly once, in order:**
+  - Meta retries webhooks, so each message id is handled once: a Redis check plus a unique database column.
+  - Messages from one customer are processed one at a time.
+- **Abuse limits:** 12 messages a minute per customer and 240 per business get AI answers. Anything beyond that is still saved for the team.
+- **Non-text messages:** voice notes and stickers get a polite "please type your question" reply in the customer's language. A photo's caption is answered.
+- **Errors:** AI failures send a friendly apology in the customer's language, never a technical error.
+- **Team take-over:** a reply from the Inbox is sent to the customer's WhatsApp, and the AI pauses. WhatsApp only allows free-form replies within **24 hours** of the customer's last message, so the Inbox shows a countdown and refuses replies after that, instead of saving a message that would never arrive. Delivery ticks (sent, delivered, read, failed) update live.
+- **Dashboard → WhatsApp:**
+  - a step-by-step connection guide with the webhook URL and verify token to copy;
+  - the number's details, checked with Meta before saving;
+  - an animated phone preview;
+  - live stats and delivery problems;
+  - a "send test message" button;
+  - disconnect.
+- **Secrets:**
+  - The business's access token is **encrypted at rest** (Fernet, key derived from `SECRET_KEY`) and never sent back to the browser.
+  - The platform's App Secret and verify token live only in `backend/.env` (`WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`).
+
 ## Dashboard
 
 | Page | What it does |
@@ -76,6 +102,7 @@ One line on any website (WordPress, Shopify, Wix, plain HTML):
 | **Overview** | Greeting, today's numbers, "needs a human" alert, a setup checklist (knowledge, tools, testing, widget key, first visitor, team, tracing), latest conversations, upcoming appointments, last 7 days |
 | **Conversations** | Team inbox for every channel: search, filters (needs human, unread, AI handling, resolved), unread markers, live updates. **Take over** pauses the AI; replying as a person takes over automatically; **Hand back to AI** and **Resolve**. If a resolved customer writes again, the conversation reopens and the AI answers |
 | **Knowledge · Chat Playground · Agent Tools · Website Widget · Analytics** | Phases 2–7 |
+| **WhatsApp** | Connect a number, webhook details, test message, live status (Phase 10) |
 | **Team** | Members and roles (owner / admin / member), invite links, pending invitations, leave or remove |
 | **Settings** | Business name and default language, delete business (owner, type the name to confirm), profile, change password, logged-in devices, API keys |
 
@@ -194,4 +221,4 @@ Tests (one-time setup: `docker exec rehber-db-1 createdb -U rehber rehber_test`)
 - [x] 7. Evaluation set (17 cases, 8 languages), Langfuse tracing with PII masking, cost/speed/reliability analytics per business
 - [x] 8. Full dashboard: overview, team inbox with live human take-over in the widget, team & invitations, business/account settings, mobile navigation
 - [x] 9. CI (GitHub Actions), production Docker stack published with Tailscale Funnel, emails (password reset, invites, hand-off alerts)
-- [ ] 10. WhatsApp channel
+- [x] 10. WhatsApp channel (Meta Cloud API): signed webhook, idempotent and ordered handling, read receipts and typing, team replies with the 24-hour window, delivery ticks, encrypted tokens

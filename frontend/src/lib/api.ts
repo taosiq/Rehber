@@ -361,10 +361,31 @@ export const businessApi = {
 export type OverviewData = {
   business: { name: string; timezone: string; default_language: string };
   setup: { documents: boolean; documents_ready: number; documents_total: number; tools: boolean; tested: boolean;
-    widget_key: boolean; widget_live: boolean; team: boolean; tracing: boolean };
+    widget_key: boolean; widget_live: boolean; team: boolean; tracing: boolean; whatsapp?: boolean };
   today: { conversations: number; answers: number; bookings: number; needs_human: number };
   recent: import("./chat").ConversationSummary[];
   upcoming: { id: string; code: string; customer_name: string; service: string; start_at: string; conversation_id: string | null }[];
 };
 
 export const overviewApi = { get: (tid: string) => request<OverviewData>(`/tenants/${tid}/overview`) };
+
+// ---------- WhatsApp (Phase 10) ----------
+
+export type WhatsAppStatus = {
+  connected: boolean;
+  webhook: { url: string; verify_token: string | null; server_ready: boolean; public: boolean };
+  stats: { conversations: number; messages_7d: number };
+  account: {
+    phone_number_id: string; waba_id: string | null; display_phone_number: string | null; verified_name: string | null;
+    connected_at: string; last_inbound_at: string | null; last_error: string | null; last_error_at: string | null;
+    token_ok: boolean;
+  } | null;
+};
+
+export const whatsappApi = {
+  get: (tid: string) => request<WhatsAppStatus>(`/tenants/${tid}/whatsapp`),
+  connect: (tid: string, body: { phone_number_id: string; access_token: string; waba_id?: string | null }) =>
+    request<WhatsAppStatus>(`/tenants/${tid}/whatsapp`, send("PUT", body)),
+  disconnect: (tid: string) => request<void>(`/tenants/${tid}/whatsapp`, send("DELETE")),
+  test: (tid: string, to: string) => request<{ sent: boolean }>(`/tenants/${tid}/whatsapp/test`, send("POST", { to })),
+};
