@@ -92,7 +92,7 @@ function TenantSwitcher() {
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-base font-medium">{current?.name ?? "No business yet"}</span>
-          <span className="block text-xs capitalize text-muted">{role} · business</span>
+          <span className="block text-xs text-muted">{current ? <span className="capitalize">{role} · business</span> : "Create one to start"}</span>
         </span>
         <ChevronsUpDown size={16} className="text-muted" />
       </button>

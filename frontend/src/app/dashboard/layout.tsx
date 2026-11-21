@@ -1,4 +1,5 @@
 import { AuthGate } from "@/components/auth/AuthContext";
+import { BusinessGate } from "@/components/dashboard/BusinessGate";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { TenantProvider } from "@/components/dashboard/TenantContext";
 
@@ -19,7 +20,7 @@ export default function DashboardLayout({ children }: LayoutProps<"/dashboard">)
             <div className="aurora-blob bottom-[-20%] left-[20%] h-[500px] w-[500px] bg-accent/30 [animation-delay:-8s]" />
           </div>
           <Sidebar />
-          <main className="min-w-0 flex-1 pt-16 lg:pt-0">{children}</main>
+          <main className="min-w-0 flex-1 pt-16 lg:pt-0"><BusinessGate>{children}</BusinessGate></main>
         </div>
       </TenantProvider>
     </AuthGate>
